@@ -10,4 +10,5 @@
                  [aysylu/loom "0.5.4"]]                       ;Not actually being used yet!
   :main ^:skip-aot GraphNamedThings.core
   :target-path "target/%s"
+  :jvm-opts ["-Xms4g"]
   :profiles {:uberjar {:aot :all}})
