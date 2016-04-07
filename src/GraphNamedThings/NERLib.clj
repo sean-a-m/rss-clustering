@@ -1,107 +1,127 @@
 ;TODO: Functions required to aggregate coreferences
 
 (ns GraphNamedThings.NERLib
+  (use GraphNamedThings.util)
   (:import edu.stanford.nlp.simple.Document)
   (:import edu.stanford.nlp.simple.Sentence)
   (:import edu.stanford.nlp.simple.SentenceAlgorithms)
   (:import edu.stanford.nlp.ie.machinereading.structure.Span))
 
-(defn in?
-  [elm coll]
-  (some #(= elm %) coll))
-
 
 ;Sentence, POS tag -> list of words
-(defn sentencePOS [s pos]
+(defn sentence-pos [s pos]
   (flatten
     (map rest
       (get
         (group-by first
-          (map vector (.posTags s) (.words s))) pos))))
+          (map vector (.posTags s) (.words s)))
+        pos))))
 
 
 ;Sentence -> NER list
-(defn sentenceNER [s]
-  (let [notNERs "O"
+(defn sentence-ner [s]
+  (let [not-ners "O"
         words (.words s)
         tags (.nerTags s)]
-        (partition-by #(= notNERs %)
+        (partition-by #(= not-ners %)
           tags)))
 
 ;Sentence -> NER list, alternate implementation
-(defn sentenceNER2 [s]
-  (let [notNERs "O"
+(defn sentence-ner2 [s]
+  (let [not-ners "O"
         words (.words s)
         tags (.nerTags s)]
-    (map-indexed (fn [idx w] (nth w 0))
+    (map-indexed
+      (fn [idx w]
+        (nth w 0))
       words)))
 
 
 ;Document, POS tag -> list of words corresponding to POS tag supplied
-(defn docPOS [d pos]
+(defn doc-pos [d pos]
   (flatten
-    (map #(sentencePOS % pos)
+    (map
+      #(sentence-pos % pos)
          (seq (.sentences d)))))
 
 ;Document -> NER list
-(defn docNER [d]
-    (mapcat #(sentenceNER %)
-         (.sentences d)))
+(defn doc-ner [d]
+    (mapcat
+      #(sentence-ner %)
+      (.sentences d)))
 
 ;NER Group list, start index ->
-(defn NERSpanPair [l i]
+(defn ner-span-pair [l i]
   (list i (+ (dec i) (count l))))
 
 ;NER List -> list of spans
-(defn ListNERSpans [l i]
+(defn list-ner-spans [l i]
   (cond
     (empty? l) ()
     :else (cons
-            (NERSpanPair (first l) i) (ListNERSpans (rest l) (+ i (count (first l)))))))  ;TODO: Requiring the caller to pass the number "1" as a function argument is silly
+            (ner-span-pair (first l) i)
+            (list-ner-spans
+              (rest l)
+              (+ i
+                 (count
+                   (first l)))))))  ;TODO: Requiring the caller to pass the number "1" as a function argument is silly
 
 ;list of spans, NER list, tag to remove -> filtered list of spans
-(defn ListNERSpansFiltered [ls ln tag]
+(defn list-ner-spans-filtered [ls ln tag]
   (let [spans (map #(first %) ls)
-        NERs (map #(first %) ln)]
-    (keep-indexed #(if (in? (nth NERs %1) tag) %2) ls)))
+        ners (map #(first %) ln)]
+    (keep-indexed #(if (in? (nth ners %1) tag) %2) ls)))
 
 
 ;List of span integer pairs -> List of span objects
-(defn toSpan [l]
-  (map #(Span. (dec (first %)) (second %)) l))  ;the first number in the pair is 0 indexed, and the second number is exclusive, so decrementing the first number solves both of those problems
+(defn to-span [l]
+  (map #(Span.
+          (dec (first %))
+          (second %))
+       l))  ;the first number in the pair is 0 indexed, and the second number is exclusive, so decrementing the first number solves both of those problems
 
 ;Document object -> coreference map object (type Map<Integer,CorefChain>) converted to list of object CorefChain
-(defn corefMap [doc]
+(defn coref-map [doc]
   (vals
-    (into {} (java.util.HashMap. (.coref doc)))))
+    (into
+      {} (java.util.HashMap.
+           (.coref doc)))))
 
 ;List of lists of coref mentions
-(defn corefMentions [doc]
+(defn coref-mentions [doc]
   (map #(.getMentionsInTextualOrder %)
-       (corefMap doc)))
+       (coref-map doc)))
 
-(defn corefText [l]
+(defn coref-text [l]
   (map #(.mentionSpan %) l))
 
 ;Mention object, Document object -> Word offset (in order to convert span number to be based on total number of words instead of the offset from the start of a given sentence)
-(defn mentionOffset [m doc]
-  (let [sentNum (.sentNum m)
-        predSentences (take (dec sentNum) (.sentences doc))]
-    (reduce + (map #(.length %) predSentences))))
+(defn mention-offset [m doc]
+  (let [sent-num (.sentNum m)
+        pred-sentences (take (dec sent-num) (.sentences doc))]
+    (reduce +
+            (map #(.length %)
+                 pred-sentences))))
 
 
-(defn corefSpans [l doc]
-  (let [sentNum #(.sentnum %)]
+(defn coref-spans [l doc]
+  (let [sent-num #(.sentNum %)]
     (map #(list
-            (+ (.startIndex %) (mentionOffset % doc))
-            (+ (.endIndex %) (mentionOffset % doc)))
+            (+
+              (.startIndex %)
+              (mention-offset % doc))
+            (+
+              (.endIndex %)
+              (mention-offset % doc)))
          l)))
 
-(defn corefSpansAll [doc]
-  (map #(corefSpans % doc)
-       (corefMentions doc)))
+(defn coref-spans-all [doc]
+  (map #(coref-spans % doc)
+       (coref-mentions doc)))
 
-(defn corefTextAll [doc]
-  (map #(corefText %)
-       (corefMentions doc)))
+(defn coref-text-all [doc]
+  (map #(coref-text %)
+       (coref-mentions doc)))
+
+
 
