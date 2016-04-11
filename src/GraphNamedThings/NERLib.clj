@@ -1,4 +1,4 @@
-;TODO: Functions required to aggregate coreferences
+
 
 (ns GraphNamedThings.NERLib
   (use GraphNamedThings.util)

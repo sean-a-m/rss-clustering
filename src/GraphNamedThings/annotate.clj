@@ -12,7 +12,7 @@
 ;Defines one coref mention, consisting of the ID, sentence number, and span (begin end) tuple (one-indexed)
 (defrecord coref-record [id idx-s idx-start idx-end])
 
-;annotation, coref-metnions -> coref ID that contains annotation
+;annotation, coref-mentions -> coref ID that contains annotation
 (defn annotation-in-mention [a ms]
   (:id
     (first
@@ -67,10 +67,15 @@
   (mapcat #(annotate-sentence %)
           (.sentences d)))
 
-(defn group-words [l]
-  (partition-by :tag l))
-
+;Map keyed to coref-id, values of lists of annotations for that coref-id
+;Partition based on differing tag or coref-id, then group results by coref-id.
+;TODO: should merge tokens beforehand so partitioning and grouping doesn't depend on list order
 (defn my-mentions [doc]
-  (let [as (annotate-doc doc)
-        ms (coref-list doc)]
-    (map #(annotation-in-mention % ms) as)))
+  (let [annotations (annotate-doc doc)
+        corefs (coref-list doc)
+        coref-ids (map #(annotation-in-mention % corefs) annotations)
+        as (map #(assoc %1 :coref-id %2)
+                annotations coref-ids)]
+    (group-by #(:coref-id (first %))
+          (partition-by #(list (:tag %) (:coref-id %)) as))))
+
