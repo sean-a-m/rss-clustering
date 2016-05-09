@@ -1,7 +1,7 @@
 (ns GraphNamedThings.aggregated)
 
 ;if range defined by pair r contained within any pair in list l then return that pair, otherwise, return empty list
-;TODO: do something to prevent problems if r where r2>r1 is passed to function
+;TODO: error if  r2>r1 is passed to function
 (defn span-in-list [r l]
   (let [r1 (first r)
         r2 (second r)]
