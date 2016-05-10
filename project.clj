@@ -4,6 +4,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
+                 [digest "1.4.4"]
                  [edu.stanford.nlp/stanford-corenlp "3.6.0"]
                  [edu.stanford.nlp/stanford-corenlp "3.6.0" :classifier "models-english"]
                  [com.google.protobuf/protobuf-java "2.6.1"]  ;This should be a dependency for Stanford NLP's simple version but it isn't

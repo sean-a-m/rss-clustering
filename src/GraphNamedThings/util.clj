@@ -1,11 +1,13 @@
 (ns GraphNamedThings.util
-  (require [clojure.zip :as zip]))
+  (require [clojure.zip :as zip])
+  (require digest))
 
 
 (defn in? [elm coll]
   (some #(= elm %) coll))
 
-(defn uuid [] (str (java.util.UUID/randomUUID)))
+(defn uuid []
+  (str (java.util.UUID/randomUUID)))
 
 (defn abs [n] (max n (- n)))
 
@@ -15,6 +17,10 @@
 
 (defn adjacent? [a b]
   (= 1 (abs (- a b))))
+
+(defn hash-string [string]
+  (digest/md5 string))
+
 
 ;returns which nth list within a list an element belongs to
 (defn nested-index [elm]
