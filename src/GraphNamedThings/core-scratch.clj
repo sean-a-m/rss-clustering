@@ -105,6 +105,18 @@ parted
 
 annotated
 
+(dec (:coref-head (first (flatten annotated))))
+
+
+
+(map #(ner-tag-at-head % annotated) annotated)
+
+
+
+
+
+annotated
+
 
 (def merged-filtered
 (filter-nonentities

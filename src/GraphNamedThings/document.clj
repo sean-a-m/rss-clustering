@@ -18,6 +18,18 @@
   (let [strings (map #(:string %) tokens)]
     (clojure.string/join " " strings)))
 
+(defn ner-tag-at-head [token tokens]
+  (if (zero? (:coref-head token))
+    ;if the coref-head index is 0 then there was no coreference, so the token's NER tag is it's own
+    (:ner-tag token)
+    ;else, the token's NER tag is the NER tag of the token's coreference's head word
+    (:ner-tag
+      (first
+        (filter
+          #(and
+             (= (:sent-index %) (:sent-index token))
+             (= (:start-index %) (:coref-head token))) tokens)))))
+
 ;merge adjacent tokens with identical NER tags
 (defn merge-tokens [tokens]
   (let [[token-group tokens-rest] (next-group tokens)
@@ -28,15 +40,19 @@
         (cons
           (->token
             (joined-strings token-group)
-            (:ner-tag all)
+            (ner-tag-at-head all tokens)
             (:ner-id all)
             (:doc-id all)
             (:coref-id all)
             (:sent-index all)
             (:start-index (first token-group))
             (:end-index (last token-group))
-            (map :id token-group))
+            (map :id token-group)
+            (:coref-head all))
           (merge-tokens tokens-rest)))))
+
+
+
 
 ;Return a list of tokens that have an NER tag
 (defn filter-nonentities [tokens]
@@ -88,7 +104,4 @@
          (map get-tag-from-grouped tokens-grouped)
          (map tokens-from-grouped tokens-grouped)
          (map ids-from-grouped tokens-grouped))))
-
-
-
 

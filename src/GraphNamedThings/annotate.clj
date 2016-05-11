@@ -13,16 +13,16 @@
 
 (defrecord doc-record [timestamp uid title source tokens text])
 
-(defrecord token [string ner-tag ner-id doc-id coref-id sent-index start-index end-index id])
+(defrecord token [string ner-tag ner-id doc-id coref-id sent-index start-index end-index id coref-head])
 
 
 (defn token-in-mention [word-index sent-index mentions]
-  (:id
     (first
       (->> mentions
            (filter #(= sent-index (:idx-s %)))
            (filter #(<= word-index (:idx-end %)))
-           (filter #(>= word-index (:idx-start %)))))))
+           (filter #(>= word-index (:idx-start %))))))
+
 
 
 ;CorefChain.CorefMention -> (start end) pair
@@ -55,14 +55,16 @@
                       (not= (:coref-id %) nil)))
 
 
+
 (defn annotate-sentence [s doc-id corefs-from-doc]
   (let [indices (iterate inc 1)
         sentence-index (repeat (inc (.sentenceIndex s)))
-        coref-ids (map #(token-in-mention %1 %2 %3) indices sentence-index (repeat corefs-from-doc))
+        coref-ids (map #(:id (token-in-mention %1 %2 %3)) indices sentence-index (repeat corefs-from-doc))
+        coref-heads (map #((fnil inc -1) (:idx-head (token-in-mention %1 %2 %3))) indices sentence-index (repeat corefs-from-doc))
         ner-tags (partition-by #(not= "O" %) (.nerTags s))
         hash-construct (map clojure.string/join
                             (map list (.words s) indices sentence-index))]
-    (map #(->token %1 %2 %3 %4 %5 %6 %7 %8 %9)
+    (map #(->token %1 %2 %3 %4 %5 %6 %7 %8 %9 %10)
          (.words s)               ;string
          (flatten ner-tags)                 ;NER tag
          (nested-index (zip/seq-zip ner-tags))   ;NER index
@@ -71,7 +73,8 @@
          sentence-index           ;sentence index
          indices                  ;start word id
          indices               ;end word id
-         (map hash-string hash-construct))))
+         (map hash-string hash-construct)  ;uuid
+         coref-heads)))  ;coref head
 
 (defn annotate-doc [d]
   (let [corefs (coref-list d)]
