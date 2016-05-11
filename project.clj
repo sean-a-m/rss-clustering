@@ -8,7 +8,9 @@
                  [edu.stanford.nlp/stanford-corenlp "3.6.0"]
                  [edu.stanford.nlp/stanford-corenlp "3.6.0" :classifier "models-english"]
                  [com.google.protobuf/protobuf-java "2.6.1"]  ;This should be a dependency for Stanford NLP's simple version but it isn't
-                 [aysylu/loom "0.5.4"]]                       ;Not actually being used yet!
+                 [aysylu/loom "0.5.4"]                        ;Not actually being used yet!
+                 [org.jsoup/jsoup "1.9.1"]
+                 [clojure-csv/clojure-csv "2.0.1"]]
   :main ^:skip-aot GraphNamedThings.core
   :target-path "target/%s"
   :jvm-opts ["-Xms4g"]
