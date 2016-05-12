@@ -1,25 +1,38 @@
 ;Contains anything that is performed on a document record
 (ns GraphNamedThings.document
-  (use GraphNamedThings.util)
-  (use GraphNamedThings.annotate)
-  (:import edu.stanford.nlp.simple.Document)
-  (:import edu.stanford.nlp.simple.Sentence)
-  (:import edu.stanford.nlp.simple.SentenceAlgorithms)
-  (:import edu.stanford.nlp.ie.machinereading.structure.Span))
+  (:require  [GraphNamedThings.util :as util])
+  (:use [GraphNamedThings.annotate])
+  (:import [edu.stanford.nlp.simple.Document]
+           [edu.stanford.nlp.simple.Sentence]
+           [edu.stanford.nlp.simple.SentenceAlgorithms]
+           [edu.stanford.nlp.ie.machinereading.structure.Span]
+           [GraphNamedThings.annotate.token]))
 
 
 (defrecord entity [id rep-mention ner-tag tokens token-ids])
 
-;Retrieve next group of entities
-(defn next-group [t]
-  (split-with ner-or-coref?
-              (drop-while (complement ner-or-coref?) t)))
 
-(defn joined-strings [tokens]
+(defn next-group
+  "Returns the next partition of tokens in a list that have either
+  an interesting NER tag or are part of a coreference span.  Only intended
+  for a list of tokens in it's original order"
+  [tokens]
+  (split-with ner-or-coref?
+              (drop-while (complement ner-or-coref?) tokens)))
+
+(defn joined-strings
+  "Joins the token strings in a list.  Assumes the tokens are in their original
+  order.  This needs to be changed to extract the actual substring from the
+  original document instead of just guessing that each token is separated by
+  a space (not always true)"
+  [tokens]
   (let [strings (map #(:string %) tokens)]
     (clojure.string/join " " strings)))
 
-(defn ner-tag-at-head [token tokens]
+(defn ner-tag-at-head
+  "Returns the NER tag of the head word of the coreference span that the
+  token is a part of, or the token's tag if it isn't part of a coref span"
+  [token tokens]
   (if (zero? (:coref-head token))
     ;if the coref-head index is 0 then there was no coreference, so the token's NER tag is it's own
     (:ner-tag token)
@@ -31,8 +44,9 @@
              (= (:sent-index %) (:sent-index token))
              (= (:start-index %) (:coref-head token))) tokens)))))
 
-;merge adjacent tokens with identical NER tags
-(defn merge-tokens [tokens]
+(defn merge-tokens
+  "Merge adjacent tokens with identical NER tags"
+  [tokens]
   (let [[token-group tokens-rest] (next-group tokens)
         all (first token-group)]
     (cond
@@ -53,18 +67,17 @@
           (merge-tokens tokens-rest)))))
 
 
-
-
-;Return a list of tokens that have an NER tag
 (defn filter-nonentities [tokens]
+  "Return a list of tokens that have an interesting NER tag or are part of
+  a coreference (refer to a named entity)"
   (filter #(or
              (not= "O" (:ner-tag %))
              (not= nil (:coref-id %)))
           tokens))
 
-
-;Get the list of groups of tokens corresponding to entities found within a document given a document record
-(defn group-entity-tokens [doc-rec]
+(defn group-entity-tokens
+  "Get the list of groups of tokens corresponding to entities found within a document given a document record"
+  [doc-rec]
   (let [coref? #(not= (:coref-id %) nil)
         merged-filtered-tokens (-> (:tokens doc-rec)
                                    (merge-tokens)
@@ -79,22 +92,29 @@
           (filter (complement coref?) merged-filtered-tokens)))))
 
 
-(defn get-rep-mention [grouped-token]
-  "The most representative mention!")
+(defn get-rep-mention
+  "Intended to return the most representative mention of an entity.
+  Implemented as a method of one of the CoreNLP coref classes"
+  [grouped-token]
+  "This could some day be the most representative mention!")
 
-(defn make-id-from-grouped [grouped-token]
-  (hash-string
+(defn make-id-from-grouped
+  [grouped-token]
+  (util/hash-string
     (clojure.string/join
       (mapcat :id grouped-token))))
 
-(defn get-tag-from-grouped [grouped-token]
+(defn get-tag-from-grouped
+  [grouped-token]
   (:ner-tag (first grouped-token)))
 
 
-(defn tokens-from-grouped [grouped-token]
+(defn tokens-from-grouped
+  [grouped-token]
   (map :string grouped-token))
 
-(defn ids-from-grouped [grouped-token]
+(defn ids-from-grouped
+  [grouped-token]
   (map :id grouped-token))
 
 (defn extract-entities [doc-rec]

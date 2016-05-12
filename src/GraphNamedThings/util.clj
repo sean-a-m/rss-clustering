@@ -6,7 +6,7 @@
 (defn in? [elm coll]
   (some #(= elm %) coll))
 
-(defn uuid []
+(defn uuid! []
   (str (java.util.UUID/randomUUID)))
 
 (defn abs [n] (max n (- n)))
@@ -21,9 +21,9 @@
 (defn hash-string [string]
   (digest/md5 string))
 
-
-;returns which nth list within a list an element belongs to
-(defn nested-index [elm]
+(defn nested-index
+  "returns which nth list within a list an element belongs to"
+  [elm]
   (let [n-elm (zip/next elm)]
     (cond
       (zip/end? n-elm) nil

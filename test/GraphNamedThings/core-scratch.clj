@@ -1,6 +1,6 @@
 
 ;This file is currently just being used as a scratch pad
-(ns GraphNamedThings.core
+(ns GraphNamedThings.core-scratch
   (use GraphNamedThings.NERLib)
   (use GraphNamedThings.annotate)
   (use GraphNamedThings.document)

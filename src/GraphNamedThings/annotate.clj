@@ -23,16 +23,16 @@
            (filter #(<= word-index (:idx-end %)))
            (filter #(>= word-index (:idx-start %))))))
 
-
-
-;CorefChain.CorefMention -> (start end) pair
-(defn coref-span [coref-mention]
+(defn coref-span
+  "CorefChain.CorefMention -> (start end) pair"
+  [coref-mention]
   (list
     (.startIndex coref-mention)
     (.endIndex coref-mention)))
 
-;CorefChain -> coref-chain record
-(defn coref-record-from-chain [coref-chain]
+(defn coref-record-from-chain
+  "CorefChain -> coref-chain record"
+  [coref-chain]
   (let [coref-mentions (.getMentionsInTextualOrder coref-chain)]
     (map #(->coref-record %1 %2 %3 %4 %5)
          (repeat (.getChainID coref-chain))
@@ -41,8 +41,9 @@
          (map (fn [c] (dec (.endIndex c))) coref-mentions)
          (map (fn [c] (dec (.headIndex c))) coref-mentions))))
 
-;Document -> list of coref-record records
+
 (defn coref-list [doc]
+  "Document -> list of coref-record records"
   (mapcat
     #(coref-record-from-chain %)
       (vals
@@ -56,7 +57,8 @@
 
 
 
-(defn annotate-sentence [s doc-id corefs-from-doc]
+(defn annotate-sentence
+  [s doc-id corefs-from-doc]
   (let [indices (iterate inc 1)
         sentence-index (repeat (inc (.sentenceIndex s)))
         coref-ids (map #(:id (token-in-mention %1 %2 %3)) indices sentence-index (repeat corefs-from-doc))
@@ -76,27 +78,27 @@
          (map hash-string hash-construct)  ;uuid
          coref-heads)))  ;coref head
 
-(defn annotate-doc [d]
-  (let [corefs (coref-list d)]
+(defn annotate-doc [doc]
+  (let [corefs (coref-list doc)]
     (mapcat #(annotate-sentence %1 %2 %3)
-            (.sentences d)
+            (.sentences doc)
             (repeat "test!")
             (repeat corefs))))
 
 
-;calls a hash function with the document text, which isn't totally unique
 (defn hash-from-doc [doc]
   (hash-string
     (.text doc)))
 
-;get the timestamp in the correct format from a document
-;it's a placeholder for now
-(defn get-timestamp [doc]
+
+(defn get-timestamp
+  "get the timestamp in the correct format from a document, it's a placeholder for now"
+  [doc]
   "not a timestamp!")
 
-;get the title from a document
-;it's a placeholder
-(defn get-title [doc]
+(defn get-title
+  "get the title from a document, it's a placeholder"
+  [doc]
   "not a title!")
 
 (defn get-doc-source [doc]
@@ -112,8 +114,10 @@
 (defn process-entities [doc]
 )
 
-;Returns a document record, including a title
-(defn process-document [doc]
+
+(defn process-document
+  "Returns a document record from a Document object"
+  [doc]
   (let [doc-title (get-title doc)
         doc-timestamp (get-timestamp doc)
         doc-id (hash-from-doc doc)

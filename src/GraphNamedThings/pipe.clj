@@ -1,6 +1,6 @@
 ;Date reading functions go here
 ;TODO: move test functions out of this file to somewhere more appropriate
-(ns GraphNamedThings.core
+(ns GraphNamedThings.pipe
   (use GraphNamedThings.document)
   (use clojure-csv.core)
   (use clojure.java.jdbc)
