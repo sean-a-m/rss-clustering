@@ -5,6 +5,7 @@
   (use GraphNamedThings.annotate)
   (use GraphNamedThings.util)
   (use GraphNamedThings.document)
+  (use GraphNamedThings.pipe)
   (require [clojure.zip :as zip])
   (:import edu.stanford.nlp.simple.Document)
   (:import edu.stanford.nlp.simple.Sentence)

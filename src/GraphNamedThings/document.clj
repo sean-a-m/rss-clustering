@@ -1,3 +1,4 @@
+;Contains anything that is performed on a document record
 (ns GraphNamedThings.document
   (use GraphNamedThings.util)
   (use GraphNamedThings.annotate)
