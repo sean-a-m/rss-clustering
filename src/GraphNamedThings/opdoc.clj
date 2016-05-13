@@ -1,5 +1,5 @@
 ;Contains anything that is performed on a document record
-(ns GraphNamedThings.document
+(ns GraphNamedThings.opdoc
   (:require  [GraphNamedThings.util :as util])
   (:use [GraphNamedThings.annotate])
   (:import [edu.stanford.nlp.simple.Document]

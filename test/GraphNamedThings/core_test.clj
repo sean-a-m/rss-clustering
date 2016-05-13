@@ -74,7 +74,7 @@ merged-filtered
 
 processed
 
-(read-doc "test/doc")
+; (read-doc "test/doc")
 
 (def nest-list '(("O") ("O") (7 6 5) ("O") (1 7 4) ("O" "O" "O") (3 2) ("O") ("O")))
 

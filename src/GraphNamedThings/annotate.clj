@@ -2,10 +2,8 @@
 (ns GraphNamedThings.annotate
   (use GraphNamedThings.util)
   (require [clojure.zip :as zip])
-  (:import edu.stanford.nlp.simple.Document)
-  (:import edu.stanford.nlp.simple.Sentence)
-  (:import edu.stanford.nlp.simple.SentenceAlgorithms)
-  (:import edu.stanford.nlp.ie.machinereading.structure.Span))
+  (:import [edu.stanford.nlp.simple Document Sentence SentenceAlgorithms]
+           [edu.stanford.nlp.ie.machinereading.structure Span]))
 
 
 ;Defines one coref mention, consisting of the ID, sentence number, and span (begin end) tuple (one-indexed)

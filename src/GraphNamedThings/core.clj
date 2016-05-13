@@ -1,16 +1,11 @@
 
 (ns GraphNamedThings.core
-  (use GraphNamedThings.NERLib)
-  (use GraphNamedThings.annotate)
-  (use GraphNamedThings.util)
-  (use GraphNamedThings.document)
-  (use GraphNamedThings.pipe)
-  (require [clojure.zip :as zip])
-  (:import edu.stanford.nlp.simple.Document)
-  (:import edu.stanford.nlp.simple.Sentence)
-  (:import edu.stanford.nlp.simple.SentenceAlgorithms)
-  (:import edu.stanford.nlp.ie.machinereading.structure.Span))
-
+  (require [GraphNamedThings.annotate :as annotate]
+           [GraphNamedThings.util :as util]
+           [GraphNamedThings.opdoc :as opdoc]
+           [GraphNamedThings.pipe :as pipe]
+           [clojure.zip :as zip])
+  (:import [edu.stanford.nlp.simple Document Sentence SentenceAlgorithms]))
 
 (defn -main
   [& args]
@@ -21,7 +16,7 @@
 
     (println
       (-> doc
-          (annotate-doc)
-          (merge-tokens)
-          (filter-nonentities)))))
+          (annotate/annotate-doc)
+          (opdoc/merge-tokens)
+          (opdoc/filter-nonentities)))))
 

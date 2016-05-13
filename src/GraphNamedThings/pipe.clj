@@ -1,10 +1,10 @@
 ;Date reading functions go here
 ;TODO: move test functions out of this file to somewhere more appropriate
 (ns GraphNamedThings.pipe
-  (use GraphNamedThings.document)
-  (use clojure-csv.core)
-  (use clojure.java.jdbc)
-  (use clojure.java.io)
+  (require [GraphNamedThings.opdoc :as opdoc]
+           [clojure-csv.core :as csv]
+           [clojure.java.jdbc :as jdbc]
+           [clojure.java.io :as io])
   (:import org.jsoup.Jsoup))
 
 (defn parse-html-fragment
@@ -30,9 +30,9 @@
   [file header-map]
   (map
     #(zipmap header-map %)
-      (with-open [fcsv (reader file)]
+      (with-open [fcsv (io/reader file)]
         (doall
-          (parse-csv fcsv)))))
+          (csv/parse-csv fcsv)))))
 
 
 
@@ -53,7 +53,7 @@
 (defn read-from-sqlite
 (
   [query-string db]
-    (query db query-string)
+    (jdbc/query db query-string)
   ))
 
 (def test-db (sqlite-db sqlite-path))
