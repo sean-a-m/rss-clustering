@@ -74,18 +74,22 @@
     (.endIndex coref-mention)))
 
 (defn coref-record-from-chain
-  "CorefChain -> coref-chain record"
+  "CorefChain -> coref-chain record.
+  Filter out anything with only one item in a coreference chain since it isn't interesting as a corefence"
   [coref-chain]
   (let [coref-mentions (.getMentionsInTextualOrder coref-chain)]
-    (map #(->coref-record %1 %2 %3 %4 %5)
-         (repeat (.getChainID coref-chain))
-         (map (fn [c] (.sentNum c)) coref-mentions)
-         (map (fn [c] (.startIndex c)) coref-mentions)
-         (map (fn [c] (dec (.endIndex c))) coref-mentions)
-         (map (fn [c] (dec (.headIndex c))) coref-mentions))))
+    (if (< 1 (count coref-mentions))
+      (map #(->coref-record %1 %2 %3 %4 %5)
+           (repeat (.getChainID coref-chain))
+           (map (fn [c] (.sentNum c)) coref-mentions)
+           (map (fn [c] (.startIndex c)) coref-mentions)
+           (map (fn [c] (dec (.endIndex c))) coref-mentions)
+           (map (fn [c] (dec (.headIndex c))) coref-mentions))
+      nil)))
 
 
-(defn coref-list [coref-anno]
+(defn coref-list
+  [coref-anno]
   "Document -> list of coref-record records"
   (mapcat
     #(coref-record-from-chain %)
@@ -114,6 +118,10 @@
                       (not= (:coref-id %) nil)))
 
 
+(defn filter-nonentity-corefs
+  [ner-list corefs-from-doc]
+  "3")
+
 
 (defn annotate-doc
   [processed doc-id corefs-from-doc nes]
@@ -140,24 +148,20 @@
 
 
 
-
-
-
-
-
 (defn process-documents
   [docs]
   (let [props
         (doto (java.util.Properties.)
           (.put "annotators" "tokenize, ssplit, pos, lemma, ner, parse, dcoref"))
         pipes (new StanfordCoreNLP props)
-        processed (. pipes process docs)]
+        processed (. pipes process docs)
+        ners (ner-list processed)]
     (annotate-doc
       processed
       "id"
       (coref-list
         (get-corefs processed))
-      (ner-list processed))))
+      ners)))
 
 
 
@@ -167,8 +171,14 @@
 (def words "Bernie Sanders won the U.S. presidential Democratic nominating contest in Wyoming on Saturday, besting rival Hillary Clinton and adding to a string of recent victories as the two candidates gear up for a crucial matchup in New York.  Sanders, a U.S. senator from Vermont, has won seven out of the last eight state-level Democratic nominating contests, chipping away at Clinton's big lead in the number of delegates needed to secure the party's nomination.")
 (def processed (. pipes process words))
 
+
 (coref-list
-  (get-corefs processed))
+ (get-corefs processed))
+
+processed
+
+(ner-list processed)
+
 
 ;(-> words
 ;    (process-documents)
