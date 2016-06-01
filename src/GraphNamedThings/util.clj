@@ -3,22 +3,33 @@
   (require digest))
 
 
-(defn in? [elm coll]
+(defn in?
+  "Is an element in a collection?"
+  [elm coll]
   (some #(= elm %) coll))
 
 (defn uuid! []
+  "Create a java uuid"
   (str (java.util.UUID/randomUUID)))
 
-(defn abs [n] (max n (- n)))
+(defn abs
+  "Absolute value"
+  [n]
+  (max n (- n)))
 
 (defn count-seqs [coll]
+  "Returns number of collections the next level down in a collection"
   (count
     (filter seq? coll)))
 
-(defn adjacent? [a b]
+(defn adjacent?
+  "True if A and B are adjacent integers"
+  [a b]
   (= 1 (abs (- a b))))
 
-(defn hash-string [string]
+(defn hash-string
+  "MDF hash of string"
+  [string]
   (digest/md5 string))
 
 (defn nested-index

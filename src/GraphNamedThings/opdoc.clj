@@ -1,12 +1,9 @@
-;Contains anything that is performed on a document record
+;Contains anything that is performed on a token record
 (ns GraphNamedThings.opdoc
   (:require  [GraphNamedThings.util :as util])
-  (:use [GraphNamedThings.annotate])
-  (:import [edu.stanford.nlp.simple.Document]
-           [edu.stanford.nlp.simple.Sentence]
-           [edu.stanford.nlp.simple.SentenceAlgorithms]
-           [edu.stanford.nlp.ie.machinereading.structure.Span]
-           [GraphNamedThings.annotate.token]))
+  (:use [GraphNamedThings.inputs])
+  (:import [edu.stanford.nlp.ie.machinereading.structure.Span]
+           [GraphNamedThings.inputs.token]))
 
 
 (defrecord entity [id rep-mention ner-tag tokens token-ids])
@@ -57,7 +54,6 @@
             (joined-strings token-group)
             (ner-tag-at-head all tokens)
             (:ner-id all)
-            (:doc-id all)
             (:coref-id all)
             (:sent-index all)
             (:start-index (first token-group))
@@ -77,9 +73,9 @@
 
 (defn group-entity-tokens
   "Get the list of groups of tokens corresponding to entities found within a document given a document record"
-  [doc-rec]
+  [tokens]
   (let [coref? #(not= (:coref-id %) nil)
-        merged-filtered-tokens (-> (:tokens doc-rec)
+        merged-filtered-tokens (-> tokens
                                    (merge-tokens)
                                    (filter-nonentities))]
     (concat
@@ -117,8 +113,18 @@
   [grouped-token]
   (map :id grouped-token))
 
-(defn extract-entities [doc-rec]
-  (let [tokens-grouped (group-entity-tokens doc-rec)]
+;(defn extract-entities [doc-rec]
+;  (let [tokens-grouped (group-entity-tokens doc-rec)]
+;    (map #(->entity %1 %2 %3 %4 %5)
+;         (map make-id-from-grouped tokens-grouped)
+;         (map get-rep-mention tokens-grouped)
+;         (map get-tag-from-grouped tokens-grouped)
+;         (map tokens-from-grouped tokens-grouped)
+;         (map ids-from-grouped tokens-grouped))))
+
+(defn extract-entities [tokens]
+  "Merge and filter token records to create a list of entity records grouped together"
+  (let [tokens-grouped (group-entity-tokens tokens)]
     (map #(->entity %1 %2 %3 %4 %5)
          (map make-id-from-grouped tokens-grouped)
          (map get-rep-mention tokens-grouped)
@@ -126,3 +132,11 @@
          (map tokens-from-grouped tokens-grouped)
          (map ids-from-grouped tokens-grouped))))
 
+
+(def my-words (list "Bernie Sanders won the U.S. presidential Democratic nominating contest in Wyoming on Saturday, besting rival Hillary Clinton and adding to a string of recent victories as the two candidates gear up for a crucial matchup in New York.  Sanders, a U.S. senator from Vermont, has won seven out of the last eight state-level Democratic nominating contests, chipping away at Clinton's big lead in the number of delegates needed to secure the party's nomination."
+                 "Testimony by Cheryl D. Mills, chief of staff when Hillary Clinton was secretary of state, represented the first sworn public accounting from a member of Mrs. Clinton’s inner circle."))
+
+(def processed-docs-i
+(process-documents my-words))
+
+(extract-entities (first processed-docs-i))

@@ -6,7 +6,12 @@
   (:import [edu.stanford.nlp.hcoref CorefCoreAnnotations$CorefChainAnnotation]))
 
 
+;(defrecord document [text tokens sentences coref-chains])
+;(defrecord sentence [text tokens sentence-index])
+;(defrecord token [text index sentence-index pos ne-tag])
 
+
+;Wrappers for retrieving various items from corenlp annotation
 
 (def corenlp-sentence edu.stanford.nlp.ling.CoreAnnotations$SentencesAnnotation)
 (def corenlp-coref edu.stanford.nlp.hcoref.CorefCoreAnnotations$CorefChainAnnotation)
@@ -15,12 +20,6 @@
 (def corenlp-text edu.stanford.nlp.ling.CoreAnnotations$TextAnnotation)
 (def corenlp-sent-index edu.stanford.nlp.ling.CoreAnnotations$SentenceIndexAnnotation)
 (def corenlp-word-index edu.stanford.nlp.ling.CoreAnnotations$IndexAnnotation)
-
-
-;(defrecord document [text tokens sentences coref-chains])
-;(defrecord sentence [text tokens sentence-index])
-;(defrecord token [text index sentence-index pos ne-tag])
-
 
 (defn get-sentences
   [annotated]
@@ -56,7 +55,7 @@
 
 (defrecord doc-record [timestamp uid title source tokens text])
 
-(defrecord token [string ner-tag ner-id doc-id coref-id sent-index start-index end-index id coref-head])
+(defrecord token [string ner-tag ner-id coref-id sent-index start-index end-index id coref-head])
 
 
 (defn token-in-mention [word-index sent-index mentions]
@@ -89,8 +88,8 @@
 
 
 (defn coref-list
-  [coref-anno]
   "Document -> list of coref-record records"
+  [coref-anno]
   (mapcat
     #(coref-record-from-chain %)
       (vals
@@ -112,20 +111,19 @@
        (get-tokens processed)))
 
 
-
+;predicate that returns true if token record is a named entity or is part of a coreference
 (def ner-or-coref? #(or
                       (not= (:ner-tag %) "O")
                       (not= (:coref-id %) nil)))
 
 
-(defn filter-nonentity-corefs
-  [ner-list corefs-from-doc]
-  "3")
-
-
 (defn annotate-doc
-  [processed doc-id corefs-from-doc nes]
+  "Create token records from CoreNLP annotation object.
+  TODO: This should be split into many more separate functions"
+  [processed]
   (let [sentence-index (sentence-index-list processed)
+        corefs-from-doc (coref-list (get-corefs processed))
+        nes (ner-list processed)
         word-indices (word-index-list processed)
         coref-ids (map #(:id (token-in-mention %1 %2 %3)) word-indices sentence-index (repeat corefs-from-doc))
         coref-heads (map #((fnil inc -1) (:idx-head (token-in-mention %1 %2 %3))) word-indices sentence-index (repeat corefs-from-doc))
@@ -134,11 +132,10 @@
                             (map list (get-words processed) word-indices sentence-index))
         words (map get-words
                (get-tokens processed))]
-    (map #(->token %1 %2 %3 %4 %5 %6 %7 %8 %9 %10)
+    (map #(->token %1 %2 %3 %4 %5 %6 %7 %8 %9)
          words               ;string
          (flatten ner-tags)                 ;NER tag
          (nested-index (zip/seq-zip ner-tags))   ;NER index
-         (repeat doc-id)          ;doc-id
          coref-ids                ;coref-id
          sentence-index           ;sentence index
          word-indices                  ;start word id
@@ -147,38 +144,49 @@
          coref-heads)))  ;coref head
 
 
+(defn corenlp-annotate-doc
+  "Run corenlp annotator on one item"
+  [doc-text corenlp-obj]
+  (. corenlp-obj process doc-text))
+
 
 (defn process-documents
+  "Takes a list of document texts and returns a list of token record lists per-document"
   [docs]
   (let [props
         (doto (java.util.Properties.)
           (.put "annotators" "tokenize, ssplit, pos, lemma, ner, parse, dcoref"))
         pipes (new StanfordCoreNLP props)
-        processed (. pipes process docs)
-        ners (ner-list processed)]
-    (annotate-doc
-      processed
-      "id"
-      (coref-list
-        (get-corefs processed))
-      ners)))
+        processed (map #(corenlp-annotate-doc % pipes) docs)]
+    (map #(annotate-doc %) processed)))
 
 
 
 (def props  (doto (java.util.Properties.)
           (.put "annotators" "tokenize, ssplit, pos, lemma, ner, parse, dcoref")))
 (def pipes (new StanfordCoreNLP props))
-(def words "Bernie Sanders won the U.S. presidential Democratic nominating contest in Wyoming on Saturday, besting rival Hillary Clinton and adding to a string of recent victories as the two candidates gear up for a crucial matchup in New York.  Sanders, a U.S. senator from Vermont, has won seven out of the last eight state-level Democratic nominating contests, chipping away at Clinton's big lead in the number of delegates needed to secure the party's nomination.")
-(def processed (. pipes process words))
+(def words (list "Bernie Sanders won the U.S. presidential Democratic nominating contest in Wyoming on Saturday, besting rival Hillary Clinton and adding to a string of recent victories as the two candidates gear up for a crucial matchup in New York.  Sanders, a U.S. senator from Vermont, has won seven out of the last eight state-level Democratic nominating contests, chipping away at Clinton's big lead in the number of delegates needed to secure the party's nomination."
+                 "Testimony by Cheryl D. Mills, chief of staff when Hillary Clinton was secretary of state, represented the first sworn public accounting from a member of Mrs. Clinton’s inner circle."))
 
-
-(coref-list
- (get-corefs processed))
+(def processed
+(map #(corenlp-annotate-doc % pipes) words))
 
 processed
 
-(ner-list processed)
+;(map #(annotate-doc %) processed)
 
+;(def test-corefs
+;(coref-list
+; (get-corefs processed)))
+
+processed
+
+;(ner-list processed)
+
+(annotate-doc (first processed))
+
+
+(process-documents words)
 
 ;(-> words
 ;    (process-documents)
