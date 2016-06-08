@@ -279,3 +279,68 @@ grouped-tokens
 
 
 (extract-entities processed-doc)
+
+
+(core-coref-list
+  (nlputil/get-corefs processed2))
+
+(token-ner-id-pairs-to-tokens
+[[1 2] [3 4]])
+
+(clojure.set/union #{1 2 3 4})
+
+
+
+
+;(map #(annotate-doc %) processed)
+
+;(def test-corefs
+;(coref-list
+; (get-corefs processed)))
+
+;processed
+
+
+  (nlputil/get-corefs processed2)
+
+(nlputil/get-words (first processed))
+
+(nlputil/ner-list (first processed))
+
+(first words)
+
+(entity-string-from-list
+  (take 2
+  (rest
+    (nlputil/get-tokens (first processed))))
+  (first words))
+;(annotate-doc (first processed))
+
+
+;(process-documents words)
+
+;(-> words
+;    (process-documents)
+;    (opdoc/merge-tokens)
+;    (opdoc/filter-nonentities))
+
+(def props  (doto (java.util.Properties.)
+          (.put "annotators" "tokenize, ssplit, pos, lemma, ner, parse, dcoref")))
+(def pipes (new StanfordCoreNLP props))
+(def words (list "The Democratic platform process is finally underway, and the main issue is this: Did the campaign of Bernie Sanders really alter the Democratic Party? The answer is not yet entirely clear, but on many key issues so far the Hillary Clinton campaign has been unwilling to commit to delivering specifics about fundamental change in America, which have been at the heart of Sanders' campaign."
+                 "Testimony by Cheryl D. Mills, chief of staff when Hillary Clinton was secretary of state, represented the first sworn public accounting from a member of Mrs. Clinton’s inner circle."))
+
+(def words2 "The Democratic platform process is finally underway, and the main issue is this: Did the campaign of Bernie Sanders really alter the Democratic Party? The answer is not yet entirely clear, but on many key issues so far the Hillary Clinton campaign has been unwilling to commit to delivering specifics about fundamental change in America, which have been at the heart of Sanders' campaign.")
+
+(def processed
+  (map #(nlputil/corenlp-annotate-doc % pipes) words))
+
+processed
+
+(def processed2 (nlputil/corenlp-annotate-doc words2 pipes))
+
+(seq ())
+
+(util/uuid!)
+
+(token-entities words2 pipes)
