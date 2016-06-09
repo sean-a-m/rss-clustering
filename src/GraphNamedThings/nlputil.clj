@@ -1,4 +1,7 @@
 (ns GraphNamedThings.nlputil
+  (require [clojure.set :as cset]
+           [clojure.core.matrix :as matrix]
+           )
     (:import [edu.stanford.nlp.ling CoreAnnotations$SentencesAnnotation CoreAnnotations$TokensAnnotation CoreAnnotations$PartOfSpeechAnnotation CoreAnnotations$TextAnnotation CoreAnnotations$CharacterOffsetBeginAnnotation CoreAnnotations$CharacterOffsetEndAnnotation])
   )
 
@@ -13,8 +16,6 @@
 (def corenlp-word-index edu.stanford.nlp.ling.CoreAnnotations$IndexAnnotation)
 (def corenlp-char-offset-begin edu.stanford.nlp.ling.CoreAnnotations$CharacterOffsetBeginAnnotation)
 (def corenlp-char-offset-end edu.stanford.nlp.ling.CoreAnnotations$CharacterOffsetEndAnnotation)
-
-
 
 (defn get-sentences
   [annotated]
@@ -70,3 +71,22 @@
   "Run corenlp annotator on one item"
   [doc-text corenlp-obj]
   (. corenlp-obj process doc-text))
+
+
+(defn cosine-sim
+  "Cosine similarity of two vectors
+  TODO: make the bottom part less ugly"
+  [w1 w2]
+  (let [f1 (frequencies w1)
+        f2 (frequencies w2)
+        intersect (cset/intersection (into #{} (keys f1)) (into #{} (keys f2)))
+        wf1 (select-keys f1 intersect)
+        wf2 (select-keys f2 intersect)
+        v1 (matrix/array (vals wf1))
+        v2 (matrix/array (vals wf2))]
+    (let [numr (matrix/dot v1 v2)
+          denm (* (matrix/length (matrix/array (vals f1))) (matrix/length (matrix/array (vals f2))))]
+      (/ numr denm))))
+
+
+

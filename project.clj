@@ -10,6 +10,7 @@
                  [com.google.protobuf/protobuf-java "2.6.1"]  ;This should be a dependency for Stanford NLP's simple version but it isn't
                  [aysylu/loom "0.5.4"]
                  [org.jsoup/jsoup "1.9.1"]
+                 [net.mikera/core.matrix "0.52.2"]
                  [org.clojure/java.jdbc "0.6.0"]
                  [clojure-csv/clojure-csv "2.0.1"]
                  [org.xerial/sqlite-jdbc "3.7.2"]]
