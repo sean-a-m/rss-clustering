@@ -14,7 +14,7 @@
 (defrecord token [string ner-tag ner-id coref-id sent-index start-index end-index id coref-head])
 
 ;defines an entity derived from processing a document
-(defrecord t-entity [strings ner-tag pos-tag])
+(defrecord entity [strings ner-tag])
 
 (defn core-coref-list
   "Take a coreference hashmap and transform to a list of values
@@ -73,7 +73,7 @@
                             (last entity-list))
         entity-sentence (nlputil/get-sentence-index (first entity-list))]
     (let [coref-ids
-      ;remove nil items from the list
+      ;remove nil items from the list, since they only represent an the result of a list of entities that was not contained in a coreference chain (not relevant)
       (remove nil?
         (map #(contained-in-chain-id entity-list %) corefs))]
       ;Give items without a coreference their own ID
@@ -123,14 +123,27 @@
         span-end (nlputil/get-token-end-offset (last ent-list))]
     (subs doc-text span-start span-end)))
 
+(defn entity-ner-tag-from-group
+  "Returns NER tag from a group of tokens
+  TODO: make this smarter about what to do if tags conflict (or throw an error)"
+  [ent-group]
+  (nlputil/get-ner-tag
+    (first
+      (first
+        ent-group))))
 
 (defn entity-strings-from-group
   "Returns group of entity strings contained within a coreferentiated group"
   [ent-group doc-text]
-  (map #(entity-string-from-list % doc-text) ent-group))
+  (->entity
+    (map (fn [e] (entity-string-from-list e doc-text)) ent-group)
+    (entity-ner-tag-from-group ent-group)))
+
+
 
 (defn token-entities
   "Process a document, returning a list of entity records"
   [doc-text pipe]
   (map #(entity-strings-from-group % doc-text)
        (token-groups doc-text pipe)))
+
