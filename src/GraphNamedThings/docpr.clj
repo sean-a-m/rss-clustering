@@ -40,35 +40,3 @@
   (reduce #(index-word-entries %2 %1) ent-index ent-recs))
 
 
-
-
-
-
-
-
-  (def props  (doto (java.util.Properties.)
-          (.put "annotators" "tokenize, ssplit, pos, lemma, ner, parse, dcoref")))
-(def pipes (new StanfordCoreNLP props))
-(def words2 "The Democratic platform process is finally underway, and the main issue is this: Did the campaign of Bernie Sanders really alter the Democratic Party? The answer is not yet entirely clear, but on many key issues so far the Hillary Clinton campaign has been unwilling to commit to delivering specifics about fundamental change in America, which have been at the heart of Sanders' campaign.")
-
-(inputs/token-entities words2 pipes)
-
-(add-entity-to-map (inputs/token-entities words2 pipes) {})
-
-
-(second (inputs/token-entities words2 pipes))
-
-(index-word-entries (second (inputs/token-entities words2 pipes)) {(keyword "Bernie") (list (last (inputs/token-entities words2 pipes)))})
-(conj (list (last (inputs/token-entities words2 pipes))) (second (inputs/token-entities words2 pipes)))
-(last (inputs/token-entities words2 pipes))
-
-(word-set
-(second (inputs/token-entities words2 pipes)))
-
-(inputs/token-entities words2 pipes)
-
-(index-entities (inputs/token-entities words2 pipes) {})
-
-(index-entities (inputs/token-entities words2 pipes)
-  (index-entities (inputs/token-entities words2 pipes) {}))
-

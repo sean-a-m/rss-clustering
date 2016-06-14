@@ -74,8 +74,9 @@
 
 
 (defn cosine-sim
-  "Cosine similarity of two vectors
-  TODO: make the bottom part less ugly"
+  "Cosine similarity of two vectors.  Takes words, not numerical vectors!
+  TODO: make the bottom part less ugly
+  TODO: generalize to vectors and move word->vector logic somewhere else"
   [w1 w2]
   (let [f1 (frequencies w1)
         f2 (frequencies w2)
@@ -87,6 +88,16 @@
     (let [numr (matrix/dot v1 v2)
           denm (* (matrix/length (matrix/array (vals f1))) (matrix/length (matrix/array (vals f2))))]
       (/ numr denm))))
+
+(defn jaccard
+  "Jaccard coefficient.  Accepts many types of sequences"
+  [w1 w2]
+  (let [v1 (into #{} w1)
+        v2 (into #{} w2)]
+    (/
+      (count (cset/intersection v1 v2))
+      (count (cset/union v1 v2)))))
+
 
 
 
