@@ -94,9 +94,10 @@
   [w1 w2]
   (let [v1 (into #{} w1)
         v2 (into #{} w2)]
+    (double
     (/
       (count (cset/intersection v1 v2))
-      (count (cset/union v1 v2)))))
+      (count (cset/union v1 v2))))))
 
 
 

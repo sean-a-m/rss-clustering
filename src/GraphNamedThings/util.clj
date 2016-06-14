@@ -42,6 +42,15 @@
         (cons (count-seqs (-> n-elm zip/up zip/lefts)) (nested-index n-elm))
       :else (nested-index n-elm))))
 
+(defn true-or-fn
+  "Return value if comparison is true, otherwise return value of function
+  TODO: remember what this is called"
+  [value comp-fn false-fn]
+  (if (comp-fn value)
+    value
+    false-fn))
+
+
 
 
 
