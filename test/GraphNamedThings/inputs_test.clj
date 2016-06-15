@@ -1,0 +1,92 @@
+(ns GraphNamedThings.test.inputs_test
+  (:require [GraphNamedThings.inputs :refer :all]
+            [clojure.test :refer :all]
+            [GraphNamedThings.util :as util]
+            [GraphNamedThings.nlputil :as nlputil])
+   (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]))
+
+;Articles from http://archive.ics.uci.edu/ml/datasets/Reuters-21578+Text+Categorization+Collection
+
+
+(def doc1a "The Tower Commission report, which
+says President Reagan was ignorant about much of the Iran arms
+deal, just about ends his prospects of regaining political
+dominance in Washington, political analysts said.
+    \"This is certification of incompetence,\" private political
+analyst Stephen Hess told Reuters in commenting on the Tower
+report made public today.
+    \"It's as if he went before a professional licensing board
+and was denied credentials.\"
+    In one of the most direct criticisms, board chairman John
+Tower, a longtime Reagan supporter and former Republican
+senator from Texas, told a press conference, \"The president
+clearly did not understand the nature of this operation.\"")
+
+(def doc1b "The Tower Commission's scathing
+comments on President Reagan's embattled chief of staff Donald
+Regan could signal the death knell to his White House tenure,
+but the impact of its strong criticism on two other top
+officials was less clear.
+    Regan has come in for tough criticism for his handling of
+Reagan's worst political crisis since details of the covert
+arms sales to Iran and diversion of profits to Nicaraguan
+rebels first emerged last November.
+    But criticism of the roles of Secretary of State George
+Shultz and Defense Secretary Caspar Weinberger, who said they
+opposed the Iran arms initiative yet failed to end it, had been
+muted until the release of the Tower Commission report.")
+
+(def doc2a "Valley Federal Savings and Loan
+Association said it appointed Joseph Biafora to the post of
+chairman and the company's president, Donald Headlund, was
+named to the additional post of chief executive.
+    The new appointments follow the death of former chairman
+and chief executive Robert Gibson, the company said.
+    It said Biafora had been vice chairman of the board.")
+
+(def docsimple "Saturn is the sixth planet from the Sun in the Solar System.")
+
+(def props  (doto (java.util.Properties.)
+              (.put "annotators" "tokenize, ssplit, pos, lemma, ner, parse, dcoref")))
+
+(def pipeline (new StanfordCoreNLP props))
+
+(def nlp-processed (nlputil/corenlp-annotate-doc doc1a pipeline))
+
+(def nlp-processed-simple (nlputil/corenlp-annotate-doc docsimple pipeline))
+
+(def nlp-tokens (nlputil/get-tokens nlp-processed))
+
+(def nlp-tokens-simple (nlputil/get-tokens nlp-processed-simple))
+
+(def tag-list (map nlputil/get-ner-tag nlp-tokens))
+
+(def tag-list-simple (map nlputil/get-ner-tag nlp-tokens-simple))
+
+(def nlp-corefs (core-coref-list
+                      (nlputil/get-corefs nlp-processed)))
+
+
+
+(deftest verify-ner-id-list
+  (let [nlp-tokens-simple (nlputil/get-tokens nlp-processed-simple)
+        tag-list-simple (map nlputil/get-ner-tag nlp-tokens-simple)]
+    (is (= (ner-ids-from-tokens nlp-tokens-simple) '(0 0 0 1 2 2 2 2 2 2 2 2 2)))))
+
+
+(deftest verify-token-groups
+  (let [test-tokens (token-groups doc1a pipeline)]
+    ;check hierarchy
+    (is (= 2 (-> (token-groups doc1a pipeline)
+                 first
+                 first
+                 count)))
+    (is (= 15 (-> (token-groups doc1a pipeline)
+                  flatten
+                  count)))
+    (is (instance? edu.stanford.nlp.ling.CoreLabel (-> (token-groups doc1a pipeline)
+                                                       first
+                                                       first
+                                                       first
+                                                       type)))))
+
