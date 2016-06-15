@@ -50,6 +50,15 @@
     value
     false-fn))
 
+(defn core-coref-list
+  "Take a coreference hashmap and transform to a list of values
+  TODO: this doesn't need it's own function or it should be moved to util.clj maybe"
+  [coref-anno]
+      (vals
+        (into
+          {} (java.util.HashMap.
+               coref-anno))))
+
 
 
 

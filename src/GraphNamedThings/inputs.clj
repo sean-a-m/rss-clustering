@@ -1,35 +1,22 @@
 (ns GraphNamedThings.inputs
   (require [clojure.zip :as zip]
            [GraphNamedThings.util :as util]
-           [GraphNamedThings.nlputil :as nlputil])
-  (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation])
-  (:import [edu.stanford.nlp.ling CoreAnnotations$SentencesAnnotation CoreAnnotations$TokensAnnotation CoreAnnotations$PartOfSpeechAnnotation CoreAnnotations$TextAnnotation CoreAnnotations$CharacterOffsetBeginAnnotation CoreAnnotations$CharacterOffsetEndAnnotation])
-  (:import [edu.stanford.nlp.hcoref CorefCoreAnnotations$CorefChainAnnotation]))
-
-;Defines one coref mention, consisting of the ID, sentence number, and span (begin end) tuple (one-indexed)
-(defrecord coref-record [id idx-s idx-start idx-end idx-head])
-
-(defrecord doc-record [timestamp uid title source tokens text])
-
-(defrecord token [string ner-tag ner-id coref-id sent-index start-index end-index id coref-head])
+           [GraphNamedThings.corenlpdefs :as nlpdefs])
+  (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]
+           [edu.stanford.nlp.ling CoreAnnotations$SentencesAnnotation CoreAnnotations$TokensAnnotation CoreAnnotations$PartOfSpeechAnnotation CoreAnnotations$TextAnnotation CoreAnnotations$CharacterOffsetBeginAnnotation CoreAnnotations$CharacterOffsetEndAnnotation]
+           [edu.stanford.nlp.hcoref CorefCoreAnnotations$CorefChainAnnotation]))
 
 ;defines an entity derived from processing a document
 (defrecord entity [strings ner-tag])
 
-(defn core-coref-list
-  "Take a coreference hashmap and transform to a list of values
-  TODO: this doesn't need it's own function or it should be moved to util.clj maybe"
-  [coref-anno]
-      (vals
-        (into
-          {} (java.util.HashMap.
-               coref-anno))))
+;TODO: Decide if this should be removed
+(defrecord doc-record [timestamp uid title source tokens text])
 
 (defn ner-ids-from-tokens
   "Return a list of id's, where each unique ID corresponds to one entity, from a list of tokens
   This is just based on grouping adjacent tokens with identical entity tags (PERSON, PLACE, etc)"
   [tokens]
-  (let [core-ner-list (map nlputil/get-ner-tag tokens)]
+  (let [core-ner-list (map nlpdefs/get-ner-tag tokens)]
     (->> core-ner-list
          (partition-by #(not= "O" %))
          (zip/seq-zip)
@@ -54,9 +41,9 @@
   "Returns the chain id if the coreference chain contains the mention span"
   [entity-list chain]
   (let [coref-mentions (.getMentionsInTextualOrder chain)
-        ent-start (nlputil/get-word-index (first entity-list))
-        ent-end (nlputil/get-word-index (last entity-list))
-        ent-sent (nlputil/get-sentence-index (first entity-list))]
+        ent-start (nlpdefs/get-word-index (first entity-list))
+        ent-end (nlpdefs/get-word-index (last entity-list))
+        ent-sent (nlpdefs/get-sentence-index (first entity-list))]
         (if (seq
           (->> coref-mentions
                (filter #(= ent-sent (.sentNum %)))
@@ -68,11 +55,9 @@
 (defn coref-ids-in-entity-list
   "Returns all coref chain ID's the entity span is a member of"
   [entity-list corefs]
-  (let [entity-span-start (nlputil/get-word-index
-                            (first entity-list))
-        entity-span-end (nlputil/get-word-index
-                            (last entity-list))
-        entity-sentence (nlputil/get-sentence-index (first entity-list))]
+  (let [entity-span-start (nlpdefs/get-word-index (first entity-list))
+        entity-span-end (nlpdefs/get-word-index (last entity-list))
+        entity-sentence (nlpdefs/get-sentence-index (first entity-list))]
     (let [coref-ids
       ;remove nil items from the list, since they only represent an the result of a list of entities that was not contained in a coreference chain (not relevant)
       (remove nil?
@@ -91,10 +76,10 @@
   TODO: This function is way too big, at least split off the part defining the list of entities
   TODO: Something shouldn't be part of multiple coreferences.  Need to fix grouping for that"
   [doc-text pipe]
-  (let [nlp-processed (nlputil/corenlp-annotate-doc doc-text pipe)
-        core-tokens (nlputil/get-tokens nlp-processed)
-        core-corefs (core-coref-list
-                      (nlputil/get-corefs nlp-processed))
+  (let [nlp-processed (nlpdefs/corenlp-annotate-doc doc-text pipe)
+        core-tokens (nlpdefs/get-tokens nlp-processed)
+        core-corefs (util/core-coref-list
+                      (nlpdefs/get-corefs nlp-processed))
         ner-ids (ner-ids-from-tokens core-tokens)]
     (let [entity-list
     ;get just the list of tokens from a vector list
@@ -102,7 +87,7 @@
       ;return set of each entity
       (vals (group-by second
         ;filter out anything that isn't an entity
-        (filter #(not= "O" (nlputil/get-ner-tag (first %)))
+        (filter #(not= "O" (nlpdefs/get-ner-tag (first %)))
                 ;vector of token objects and NER ID #'s
                 (map vector core-tokens ner-ids)))))]
       ;only take tokens
@@ -120,15 +105,15 @@
   "Returns the string corresponding to the span defined by a list of tokens
   TODO: Replace with library function that I never found"
   [ent-list doc-text]
-  (let [span-start (nlputil/get-token-start-offset (first ent-list))
-        span-end (nlputil/get-token-end-offset (last ent-list))]
+  (let [span-start (nlpdefs/get-token-start-offset (first ent-list))
+        span-end (nlpdefs/get-token-end-offset (last ent-list))]
     (subs doc-text span-start span-end)))
 
 (defn entity-ner-tag-from-group
   "Returns NER tag from a group of tokens
   TODO: make this smarter about what to do if tags conflict (or throw an error)"
   [ent-group]
-  (nlputil/get-ner-tag
+  (nlpdefs/get-ner-tag
     (first
       (first
         ent-group))))
@@ -139,7 +124,6 @@
   (->entity
     (map (fn [e] (entity-string-from-list e doc-text)) ent-group)
     (entity-ner-tag-from-group ent-group)))
-
 
 
 (defn token-entities

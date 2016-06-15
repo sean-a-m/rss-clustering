@@ -1,8 +1,6 @@
 ;Date reading functions go here
-;TODO: move test functions out of this file to somewhere more appropriate
-(ns GraphNamedThings.pipe
-  (require [GraphNamedThings.opdoc :as opdoc]
-           [clojure-csv.core :as csv]
+(ns GraphNamedThings.diskio
+  (require [clojure-csv.core :as csv]
            [clojure.java.jdbc :as jdbc]
            [clojure.java.io :as io])
   (:import org.jsoup.Jsoup))

@@ -2,6 +2,7 @@
   (require [GraphNamedThings.inputs :as inputs]
            [GraphNamedThings.util :as util]
            [GraphNamedThings.nlputil :as nlputil]
+           [GraphNamedThings.corenlpdefs :as nlpdefs]
            [clojure.string :as str])
    (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]))
 
