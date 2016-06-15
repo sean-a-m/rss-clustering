@@ -18,7 +18,7 @@
 
 (defn core-coref-list
   "Take a coreference hashmap and transform to a list of values
-  TODO: this can probably be generalized to transforming a hashmap to a list"
+  TODO: this doesn't need it's own function or it should be moved to util.clj maybe"
   [coref-anno]
       (vals
         (into
@@ -36,7 +36,8 @@
          (util/nested-index))))
 
 (defn token-ner-id-pairs-to-tokens
-  "Take a list of pairs of token objects and NER ID's and return just the list of tokens"
+  "Take a list of pairs of token objects and NER ID's and return just the list of tokens
+  TODO: This doesn't make sense, individual lists exist before the pair of lists exists"
   [token-ner-id-pairs]
   (map first token-ner-id-pairs))
 

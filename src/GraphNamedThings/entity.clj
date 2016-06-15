@@ -1,4 +1,4 @@
-(ns GraphNamedThings.docpr
+(ns GraphNamedThings.entity
   (require [GraphNamedThings.inputs :as inputs]
            [GraphNamedThings.util :as util]
            [GraphNamedThings.nlputil :as nlputil]
