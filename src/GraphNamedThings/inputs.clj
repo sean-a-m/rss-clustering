@@ -28,15 +28,6 @@
   [token-ner-id-pairs]
   (map first token-ner-id-pairs))
 
-(defn contained-in-mention?
-  "Is the start and end of span contained within this coref mention?
-  For whatever reason CoreNLP coreference indices are zero indexed but token indices aren't"
-  [start end sent mention]
-  (println "start: " start "end: " end "mention: " mention)
-  (and
-    (<= end (dec (.endIndex mention)))
-    (>= start (dec (.startIndex mention)))))
-
 (defn contained-in-chain-id
   "Returns the chain id if the coreference chain contains the mention span"
   [entity-list chain]
@@ -55,9 +46,6 @@
 (defn coref-ids-in-entity-list
   "Returns all coref chain ID's the entity span is a member of"
   [entity-list corefs]
-  (let [entity-span-start (nlpdefs/get-word-index (first entity-list))
-        entity-span-end (nlpdefs/get-word-index (last entity-list))
-        entity-sentence (nlpdefs/get-sentence-index (first entity-list))]
     (let [coref-ids
       ;remove nil items from the list, since they only represent an the result of a list of entities that was not contained in a coreference chain (not relevant)
       (remove nil?
@@ -65,12 +53,15 @@
       ;Give items without a coreference their own ID
       (if (seq coref-ids)
         coref-ids
-        (util/uuid!)))))
-
-
+        (util/uuid!))))
 
 (defn token-groups
-  "Return all tokens records in a document given text and a CoreNLP pipeline object
+  "Return all tokens records in a document given text and a CoreNLP pipeline object.
+  This generates the following structure:
+  -List of all entities
+    -List of all spans representing an entity
+      -List of all tokens in a span
+        -Token (type CoreLabel)
   TODO: There may be something in CoreNLP that is better suited for referencing a span than a list of tokens
   TODO: should probably fold instead of group-by on NER IDs
   TODO: This function is way too big, at least split off the part defining the list of entities

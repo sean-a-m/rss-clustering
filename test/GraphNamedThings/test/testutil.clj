@@ -1,7 +1,7 @@
 ;Utilities for testing.  Should probably be moved into test directory.
 
 
-(ns GraphNamedThings.testutil)
+(ns GraphNamedThings.test.testutil)
 
 
 (defn write-doc [doc-rec]

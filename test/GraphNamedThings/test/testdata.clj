@@ -1,13 +1,9 @@
-(ns GraphNamedThings.test.inputs_test
-  (:require [clojure.set :as cset]
-            [clojure.core.matrix :as matrix]
-            [GraphNamedThings.nlputil :refer :all]
-            [clojure.test :refer :all])
-  (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]))
+(ns GraphNamedThings.test.testdata)
 
 ;Articles from http://archive.ics.uci.edu/ml/datasets/Reuters-21578+Text+Categorization+Collection
 
-
+;Real news articles, doc1a and doc1b will have coreferent entities, doc2a should not have anything
+;coreferent with doc1*s
 (def doc1a "The Tower Commission report, which
 says President Reagan was ignorant about much of the Iran arms
 deal, just about ends his prospects of regaining political
@@ -41,40 +37,9 @@ Association said it appointed Joseph Biafora to the post of
 chairman and the company's president, Donald Headlund, was
 named to the additional post of chief executive.
     The new appointments follow the death of former chairman
-and chief executive Robert Gibson, the company said.
-    It said Biafora had been vice chairman of the board.")
+and chief executive Robert Gibson, the company said.")
 
-(def doclist (list doc1a doc1b doc2a))
+(def doclist '(doc1a doc1b doc2a))
 
-(def props  (doto (java.util.Properties.)
-              (.put "annotators" "tokenize, ssplit, pos, lemma, ner, parse, dcoref")))
-
-(def pipeline (new StanfordCoreNLP props))
-
-(def processed
-  (map #(corenlp-annotate-doc % pipeline) words))
-
-(deftest processing-succeeds
-  (is (instance? edu.stanford.nlp.pipeline.Annotation
-    (corenlp-annotate-doc doc1a pipeline))))
-
-(deftest cosine-sim-correct
-  (let [v1 '("glutathione" "homocystine" "transhydrogenase")
-        v2 '("glutathione" "coa" "glutathione" "transhydrogenase")]\
-    ;close enough
-    (is (< 0.7 (cosine-sim v1 v2) 3))
-    (is (> 0.72 (cosine-sim v1 v2) 3))))
-
-(deftest jaccard-correct
-  (let [v1 '("A" "B" "C" "D" "E")
-        v2 '("I" "H" "G" "F" "E" "D")]
-    (is (< 0.22 (jaccard v1 v2)))
-    (is (> 0.23 (jaccard v1 v2)))))
-
-(deftest jaccard-correct-set
-  (let [v1 '("A" "B" "C" "D" "D" "D" "D" "A" "A" "E")
-        v2 '("I" "H" "G" "F" "E" "D")]
-    (is (< 0.22 (jaccard v1 v2)))
-    (is (> 0.23 (jaccard v1 v2)))))
-
-
+;very simple document for more human-predictable test results
+(def docsimple "Saturn is the sixth planet from the Sun in the Solar System.")

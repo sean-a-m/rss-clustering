@@ -7,7 +7,6 @@
                  [digest "1.4.4"]
                  [edu.stanford.nlp/stanford-corenlp "3.6.0"]
                  [edu.stanford.nlp/stanford-corenlp "3.6.0" :classifier "models-english"]
-                 [com.google.protobuf/protobuf-java "2.6.1"]  ;This should be a dependency for Stanford NLP's simple version but it isn't
                  [aysylu/loom "0.5.4"]
                  [org.jsoup/jsoup "1.9.1"]
                  [net.mikera/core.matrix "0.52.2"]

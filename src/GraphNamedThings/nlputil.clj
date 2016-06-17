@@ -1,7 +1,6 @@
 (ns GraphNamedThings.nlputil
   (require [clojure.set :as cset]
-           [clojure.core.matrix :as matrix])
-    (:import [edu.stanford.nlp.ling CoreAnnotations$SentencesAnnotation CoreAnnotations$TokensAnnotation CoreAnnotations$PartOfSpeechAnnotation CoreAnnotations$TextAnnotation CoreAnnotations$CharacterOffsetBeginAnnotation CoreAnnotations$CharacterOffsetEndAnnotation]))
+           [clojure.core.matrix :as matrix]))
 
 (defn cosine-sim
   "Cosine similarity of two vectors.  Takes words, not numerical vectors!
@@ -28,6 +27,16 @@
     (/
       (count (cset/intersection v1 v2))
       (count (cset/union v1 v2))))))
+
+(defn contained-in-mention?
+  "Is the start and end of span contained within this coref mention?
+  For whatever reason CoreNLP coreference indices are zero indexed but token indices aren't"
+  [start end sent mention]
+  (println "start: " start "end: " end "mention: " mention)
+  (and
+    (<= end (dec (.endIndex mention)))
+    (>= start (dec (.startIndex mention)))
+    (= sent (.sentIndex mention))))
 
 
 
