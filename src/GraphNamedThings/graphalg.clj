@@ -1,7 +1,36 @@
 (ns GraphNamedThings.graphalg
   (:require [loom.graph]
-            [clojure.core.matrix :as m]))
+            [clojure.core.matrix :as m]
+            [clojure.core.matrix.dataset :as ds]))
 
+;TODO: split MCL and generic graph code into separate files
+
+(defn adjmat-to-column
+  [node nodeset]
+  (into []
+        (map #(if (contains? node %)
+               1
+               0)
+             nodeset)))
+
+(defn graph-to-adj-mat
+  "Build an adjaceny matrix given a graph.  Creates a dataset to store the node keys corresponding
+  to the matrix columns"
+  [g]
+  (ds/dataset
+    (:nodeset g)
+    (map #(adjmat-to-column (% (:adj g)) (:nodeset g)) (:nodeset g))))
+
+(defn indices-to-keys
+  "Takes an ordered sequence of key values and a sequence of indices and returns the sequence of key values
+  corresponding to those indices"
+  [ks xs]
+  (set
+    (map #(nth ks %) xs)))
+
+(defn ds-connected-to-keys
+  [ks xs]
+    (map (partial indices-to-keys ks) xs))
 
 (defn add-self-loops
   "Adds self-looping edges to the adjacency matrix corresponding to each node on the graph.
@@ -46,7 +75,7 @@
 
 (defn mcl-iterate
   "Iterate Markov Cluster Algorithm until solution converges or iteration limit is reached"
-  [mat limit]
+  [limit mat]
   ;TODO: consider the problem of cycles that don't converge
   ;TODO: consider using mutable arrays
   (let [ε 0.025
@@ -56,7 +85,7 @@
     (if (or (zero? limit)
             (m/equals mat new-mat ε))
       new-mat
-      (recur new-mat (dec limit)))))
+      (recur (dec limit) new-mat))))
 
 (defn nonzero-indices
   "Return indices of non-zero elements in a row.  Shouldn't be used with floats"
@@ -77,5 +106,15 @@
         attractor-indices (nonzero-indices attractors)
         attractor-rows (map (partial m/get-row mat) attractor-indices)]
     (map #(nonzero-indices (m/gt % ε)) attractor-rows)))
+
+(defn cluster
+  [g]
+  (let [{:keys [column-names columns _]} (graph-to-adj-mat g)]
+    (->> columns
+        add-self-loops
+        (mcl-iterate 100)
+        mcl-connected
+        (ds-connected-to-keys column-names))))
+
 
 

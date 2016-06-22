@@ -43,6 +43,26 @@
      [1/4 0 1/2 0]
      [1/4 1/3 0 1/3]]))
 
+(def g3
+  (loom.graph/graph
+    [:1 :2]
+    [:1 :3]
+    [:2 :3]
+    [:3 :4]
+    [:4 :5]
+    [:4 :6]
+    [:5 :6]))
+
+(def g4
+  (loom.graph/graph
+    [:a :b]
+    [:a :c]
+    [:b :c]
+    [:c :d]
+    [:d :e]
+    [:d :f]
+    [:e :f]))
+
 (def mat3
   (m/array
     [[1 1 1 0 0 0]
@@ -106,7 +126,7 @@
 
 (deftest mcl-iterate-test
   (is (m/equals
-        (mcl-iterate (column-normalize-matrix mat3) 10)
+        (mcl-iterate 10 (column-normalize-matrix mat3))
         (m/array
           [[0 0 0 0 0 0]
            [0 0 0 0 0 0]
@@ -118,5 +138,10 @@
 
 (deftest mcl-connected-test
   (is (=
-        (mcl-connected (mcl-iterate (column-normalize-matrix mat3) 10))
+        (mcl-connected (mcl-iterate 10 (column-normalize-matrix mat3)))
         '((0 1 2) (3 4 5)))))
+
+(deftest cluster-test
+  (is (=
+        (set (cluster g4))
+        #{#{:d :e :f} #{:a :b :c}})))
