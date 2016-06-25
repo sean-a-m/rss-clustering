@@ -27,11 +27,6 @@
   [a b]
   (= 1 (abs (- a b))))
 
-(defn hash-string
-  "MDF hash of string"
-  [string]
-  (digest/md5 string))
-
 (defn nested-index
   "returns which nth list within a list an element belongs to"
   [elm]
@@ -59,8 +54,11 @@
           {} (java.util.HashMap.
                coref-anno))))
 
-
-
-
-
+(defn list-shrink
+  "!?"
+  [xs]
+  (lazy-seq
+    (if (< 0 (count xs))
+      (cons xs (list-shrink (rest xs)))
+      nil)))
 

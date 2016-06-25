@@ -28,6 +28,14 @@
       (count (cset/intersection v1 v2))
       (count (cset/union v1 v2))))))
 
+(defn longest-matching
+  "Return the character count of the longest matching strings between two sets of words"
+  [s1 s2]
+  (count
+    (last
+      (sort-by count
+        (cset/intersection s1 s2)))))
+
 (defn contained-in-mention?
   "Is the start and end of span contained within this coref mention?
   For whatever reason CoreNLP coreference indices are zero indexed but token indices aren't"

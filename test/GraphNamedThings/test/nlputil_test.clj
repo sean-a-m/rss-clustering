@@ -24,4 +24,7 @@
     (is (< 0.22 (jaccard v1 v2)))
     (is (> 0.23 (jaccard v1 v2)))))
 
-
+(deftest longest-match-test
+  (let [s1 #{"longest" "matching" "strings" "two" "discriminative"}
+        s2 #{"shortest" "matching" "strings" "three" "discriminative"}]
+    (is (= 14 (longest-matching s1 s2)))))
