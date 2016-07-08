@@ -6,9 +6,7 @@
            [clojure.string :as str]
            [clojure.set :as cset]))
 
-
-
-(defrecord document [timestamp title entities])
+;TODO: figure out why this is here and what it was for
 (defrecord entity-table [ent-map ent-index])
 
 (defn word-set
@@ -79,6 +77,17 @@
     ent-rec
     (best-coref ent-rec ent-index)))
 
+(defn index-word-entries
+  "Add all words in an entity record to an index pointing from word to list of entity records containing that word"
+  [ent-rec ent-index]
+  (let [f (fn [x] (conj x ent-rec))]
+    (reduce #(update %1 %2 f) ent-index (word-set ent-rec))))
+
+(defn index-entities
+  "Add all words in a set of entities (from a document, for example) to a hashmap where the set of words contained in all entities is the set of keys and the set of entities containing those words are the values"
+  [ent-recs ent-index]
+  (reduce #(index-word-entries %2 %1) ent-index ent-recs))
+
 (defn merge-entity
   "Merge coreferent entities, returning a map pointing from each entity to a coreference or an id"
   [ent-index ent-map ent-recs]
@@ -92,21 +101,55 @@
       (first ent-recs)
       (best-coref2 (first ent-recs) candidates))))
 
-(defn merge-entities
-  [ent-index ent-map ent-recs]
-  (reduce (partial merge-entity ent-index) ent-map (util/list-shrink ent-recs)))
+(defn get-entity-merge-map
+  "Return a map of entity records returning to coreferent records"
+  [ent-map ent-recs]
+  (let [ent-index (index-entities ent-recs {})]
+    (reduce (partial merge-entity ent-index) ent-map (util/tails ent-recs))))
+
+(defn get-entity-id
+  "Iterate through the index of entities until hitting the one where the key and value are identical (doesn't point to
+  any other entity"
+  [ent-map record]
+  (let [new-record (get ent-map record)]
+    (if (= new-record record)
+        record
+        (recur ent-map new-record))))
 
 
-(defn index-word-entries
-  "Add all words in an entity record to an index pointing from word to list of entity records containing that word"
-  [ent-rec ent-index]
-  (let [f (fn [x] (conj x ent-rec))]
-    (reduce #(update %1 %2 f) ent-index (word-set ent-rec))))
 
-(defn index-entities
-  "Add all words in a set of entities (from a document, for example) to a hashmap where the set of words contained in all entities is the set of keys and the set of entities containing those words are the values"
-  [ent-recs ent-index]
-  (reduce #(index-word-entries %2 %1) ent-index ent-recs))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

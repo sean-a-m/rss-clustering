@@ -7,7 +7,7 @@
 
 (deftest cosine-sim-correct
   (let [v1 '("glutathione" "homocystine" "transhydrogenase")
-        v2 '("glutathione" "coa" "glutathione" "transhydrogenase")]\
+        v2 '("glutathione" "coa" "glutathione" "transhydrogenase")]
     ;close enough
     (is (< 0.7 (cosine-sim v1 v2) 3))
     (is (> 0.72 (cosine-sim v1 v2) 3))))

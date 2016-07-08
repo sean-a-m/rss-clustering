@@ -1,25 +1,49 @@
 (ns GraphNamedThings.graphalg
   (:require [loom.graph]
             [clojure.core.matrix :as m]
+            [GraphNamedThings.util :as util]
             [clojure.core.matrix.dataset :as ds]))
 
 ;TODO: split MCL and generic graph code into separate files
 
+;TODO: remove repeating code by moving graph structure logic into column creation functions
+
+;TODO: consider using sparse arrays
+
+(defmulti graph-to-adj-mat loom.graph/weighted?)
+
+
 (defn adjmat-to-column
   [node nodeset]
   (into []
-        (map #(if (contains? node %)
+        (map #(if (util/in? % node)
                1
                0)
              nodeset)))
 
-(defn graph-to-adj-mat
-  "Build an adjaceny matrix given a graph.  Creates a dataset to store the node keys corresponding
-  to the matrix columns"
+(defn adjmat-to-column-weighted
+  [node nodeset]
+  (into []
+        (map #(if (util/in? % (keys node))
+               (get node %)
+               0)
+             nodeset)))
+
+;"Build an adjaceny matrix given a graph.  Creates a dataset to store the node keys corresponding
+;to the matrix columns"
+(defmethod graph-to-adj-mat
+  true [g]
+  (ds/dataset
+    (:nodeset g)
+    (map #(adjmat-to-column-weighted (get (:adj g) %) (:nodeset g)) (:nodeset g))))
+
+;"Build an adjaceny matrix given a graph.  Creates a dataset to store the node keys corresponding
+;to the matrix columns"
+(defmethod graph-to-adj-mat false
   [g]
   (ds/dataset
     (:nodeset g)
-    (map #(adjmat-to-column (% (:adj g)) (:nodeset g)) (:nodeset g))))
+    (map #(adjmat-to-column (get (:adj g) %) (:nodeset g)) (:nodeset g))))
 
 (defn indices-to-keys
   "Takes an ordered sequence of key values and a sequence of indices and returns the sequence of key values
@@ -112,6 +136,7 @@
   (let [{:keys [column-names columns _]} (graph-to-adj-mat g)]
     (->> columns
         add-self-loops
+         ;TODO: figure out a reasonable iteration number
         (mcl-iterate 100)
         mcl-connected
         (ds-connected-to-keys column-names))))

@@ -54,11 +54,10 @@
           {} (java.util.HashMap.
                coref-anno))))
 
-(defn list-shrink
-  "!?"
+(defn tails
   [xs]
   (lazy-seq
     (if (< 0 (count xs))
-      (cons xs (list-shrink (rest xs)))
+      (cons xs (tails (rest xs)))
       nil)))
 
