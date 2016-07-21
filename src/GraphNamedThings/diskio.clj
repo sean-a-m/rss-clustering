@@ -2,7 +2,11 @@
 (ns GraphNamedThings.diskio
   (require [clojure-csv.core :as csv]
            [clojure.java.jdbc :as jdbc]
-           [clojure.java.io :as io])
+           [clojure.java.io :as io]
+           [clojure.string :as str]
+           [taoensso.nippy :as nippy]
+           [korma.db :refer :all]
+           [korma.core :refer :all])
   (:import org.jsoup.Jsoup))
 
 (defn parse-html-fragment
@@ -32,10 +36,8 @@
         (doall
           (csv/parse-csv fcsv)))))
 
-
-
 ;path to test database
-(def sqlite-path "test/documents.db")
+(def sqlite-path "test/GraphNamedThings/data/documents.db")
 
 ;query for tt-rss database
 (def sqlite-query "SELECT id, title, link, date_entered, content, lang, author, feed_id FROM rss_entries")
@@ -47,6 +49,47 @@
    :subprotocol "sqlite"
    :subname     path
    })
+
+(defdb sq-kdb (sqlite-db sqlite-path))
+
+(defentity rss_entries
+           (database sq-kdb)
+           (entity-fields :id :title :content))
+
+(defentity entrecordstest
+           (database sq-kdb)
+           (entity-fields :k :v))
+
+(defn select-id-list
+  [id-list]
+  (select entrecordstest
+          (where {:k [in id-list]})))
+
+(defn insert-ent-list
+  [ent-list]
+  (insert entrecordstest
+    (values ent-list)))
+
+(def entity-table "entities")
+
+(defn read-or-add
+  "Given a k v pair and a database, return v if k exists
+  if k doesn't exist, evaluate f, write k f and return f"
+  [f k db-entity]
+  (let [db-value (:v (first (select db-entity
+                             (where {:k k}))))]
+    (if-not (nil? db-value)
+      (do
+        (print "not nil")
+        (nippy/thaw db-value))
+      (do
+        (print "nil")
+          (insert db-entity
+                  (values {:k k :v (nippy/freeze f)}))
+          f))))
+
+
+
 
 (defn read-from-sqlite
 (

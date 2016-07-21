@@ -10,15 +10,19 @@
 
 (def doccsv (diskio/read-csv-file "test/GraphNamedThings/data/data132.csv" diskio/data-header))
 
+(def doc-ids
+  (map :id doccsv))
+
 (def doc-names
   (map :title doccsv))
 
 (def doc-text
   (map #(str/join ". " (list
                         (:title %)
-                        (diskio/parse-html-fragment (:content %))))  doccsv))
+                        (diskio/parse-html-fragment (:content %)))) doccsv))
 
 (def doc-recs
-  (map #(create-document-record %1 %2 tu/pipeline) doc-names doc-text))
+  (pmap #(create-document-record %1 %2 %3 tu/pipeline) doc-ids doc-names doc-text))
 
-(def doc-graph (document/create-document-graph (take 100 doc-recs)))
+(time
+  (def doc-graph (document/create-document-graph (take 100 doc-recs))))

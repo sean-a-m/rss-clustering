@@ -2,27 +2,63 @@
   (require [GraphNamedThings.util :as util]
            [GraphNamedThings.inputs :as inputs]
            [GraphNamedThings.entity :as entity]
+           [GraphNamedThings.diskio :as diskio]
            [loom.graph :as graph]
-           [clojure.math.combinatorics :as combo]))
+           [clojure.math.combinatorics :as combo]
+           [clojure.java.jdbc :as sql]
+           [taoensso.nippy :as nippy]
+           [korma.db :refer :all]
+           [korma.core :refer :all]))
 
 
-(defrecord doc-rec [title text entities])
+(defrecord doc-rec [id title text entities])
 
 (defn doc-title
   "This is just a placeholder for returning the document title from whatever data source will be used later"
   []
   (util/uuid!))
 
-(defn create-document-record
-  "Creating a document record is sort of slow since it calls the nlp library"
-  [title text nlp-pipe]
+;(defn add-get-entities!
+;  "Get entities corresponding to document id from the database, or process the documents and write to the database if they aren't there already"
+;  [id nlp-pipe db text]
+;  (let [ent-from-db (sql/get-by-id db diskio/entity-table id)]
+;      (if-not (nil? ent-from-db))))
+
+
+
+(defn get-entity-list
+  "Get list of entities corresponding to the list of document ids supplied as an argument, returning an {:id (entities)} map"
+  [id-list]
+  3)
+
+(defn read-or-add-entities
+  "Temporarily moving this into document code because of issues with lazy evaluation"
+  [id text nlp-pipe]
+  (let [db-value (:v (first (select diskio/entrecordstest
+                                    (where {:k id}))))]
+    (if-not (nil? db-value)
+        (nippy/thaw db-value)
+      (do
+        (let [ent-list (inputs/token-entities text nlp-pipe)]
+        (insert diskio/entrecordstest
+                (values {:k id :v (nippy/freeze ent-list)}))
+        ent-list)))))
+
+
+(defn create-document-records
+  "Creating a document record may be slow since it calls the nlp library for records not already in the database"
+  [id title text nlp-pipe]
   (->doc-rec
+    id
     title
     text
     ;Filter undesired tags out
     ;TODO: move this somewhere more appropriate
+;    (filter #(every? (partial not= (:ner-tag %)) ["DATE" "NUMBER" "ORDINAL"])
+;      (inputs/token-entities text nlp-pipe))))
     (filter #(every? (partial not= (:ner-tag %)) ["DATE" "NUMBER" "ORDINAL"])
-      (inputs/token-entities text nlp-pipe))))
+            ;(diskio/read-or-add (inputs/token-entities text nlp-pipe) id diskio/entrecordstest))))
+            (read-or-add-entities id text nlp-pipe))))
 
 (defn get-entities
   "Get real entities from a list of entities"

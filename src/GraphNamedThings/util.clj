@@ -6,7 +6,7 @@
 (defn in?
   "Is an element in a collection?"
   [elm coll]
-  (some #(= elm %) coll))
+  (some #{elm} (into () coll)))
 
 (defn uuid! []
   "Create a java uuid"

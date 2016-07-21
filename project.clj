@@ -13,7 +13,9 @@
                  [org.clojure/java.jdbc "0.6.0"]
                  [clojure-csv/clojure-csv "2.0.1"]
                  [org.xerial/sqlite-jdbc "3.7.2"]
-                 [org.clojure/math.combinatorics "0.1.3"]]
+                 [org.clojure/math.combinatorics "0.1.3"]
+                 [korma "0.4.3"]
+                 [com.taoensso/nippy "2.12.1"]]
   :main ^:skip-aot GraphNamedThings.core
   :target-path "target/%s"
   :jvm-opts ["-Xms2g"]
