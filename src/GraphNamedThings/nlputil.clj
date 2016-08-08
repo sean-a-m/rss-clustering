@@ -1,6 +1,7 @@
 (ns GraphNamedThings.nlputil
-  (require [clojure.set :as cset]
-           [clojure.core.matrix :as matrix]))
+  (:require [clojure.set :as cset]
+           [clojure.core.matrix :as matrix])
+  (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]))
 
 (defn cosine-sim
   "Cosine similarity of two vectors.  Takes words, not numerical vectors!
@@ -45,6 +46,10 @@
     (<= end (dec (.endIndex mention)))
     (>= start (dec (.startIndex mention)))
     (= sent (.sentIndex mention))))
+
+(defn text-list-to-annotations
+  [texts]
+  (map #(new Annotation %) texts))
 
 
 

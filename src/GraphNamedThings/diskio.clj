@@ -5,6 +5,7 @@
            [clojure.java.io :as io]
            [clojure.string :as str]
            [taoensso.nippy :as nippy]
+           [GraphNamedThings.bad :as bad]
            [korma.db :refer :all]
            [korma.core :refer :all])
   (:import org.jsoup.Jsoup))
@@ -60,17 +61,43 @@
            (database sq-kdb)
            (entity-fields :k :v))
 
+(def psqldb
+  {:classname "org.postgresql.Driver"
+   :subprotocol "postgresql"
+   :subname "//localhost:5432/adb"
+   ; Any additional keys are passed to the driver
+   ; as driver-specific properties.
+   :user bad/psql-user
+   :password bad/psql-pass})
+
+(defentity entitytest (database psqldb) (entity-fields :k :v))
+
 (defn select-id-list
   [id-list]
-  (select entrecordstest
+  (select entitytest
           (where {:k [in id-list]})))
+
+(defn docs-by-id
+  [id-list]
+  (select rss_entries
+          (where {:id [in id-list]})))
+
+(defn doc-content
+  "Returns title + content (parsed from html) for a given document entry as returned by docs-by-id"
+  [doc-entry]
+  (str/join ". " (list
+                         (:TITLE doc-entry)
+                         (parse-html-fragment (:CONTENT doc-entry)))))
+
+(defn doc-content-by-id
+  "List of document ID's (contained in database) -> list of document contents "
+  [id-list]
+  (map doc-content (docs-by-id id-list)))
 
 (defn insert-ent-list
   [ent-list]
   (insert entrecordstest
     (values ent-list)))
-
-(def entity-table "entities")
 
 (defn read-or-add
   "Given a k v pair and a database, return v if k exists
@@ -87,8 +114,6 @@
           (insert db-entity
                   (values {:k k :v (nippy/freeze f)}))
           f))))
-
-
 
 
 (defn read-from-sqlite

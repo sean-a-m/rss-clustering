@@ -13,6 +13,7 @@
                  [org.clojure/java.jdbc "0.6.0"]
                  [clojure-csv/clojure-csv "2.0.1"]
                  [org.xerial/sqlite-jdbc "3.7.2"]
+                 [org.postgresql/postgresql "9.2-1002-jdbc4"]
                  [org.clojure/math.combinatorics "0.1.3"]
                  [korma "0.4.3"]
                  [com.taoensso/nippy "2.12.1"]]
