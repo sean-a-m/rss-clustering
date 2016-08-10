@@ -19,16 +19,12 @@
   []
   (util/uuid!))
 
-;(defn add-get-entities!
-;  "Get entities corresponding to document id from the database, or process the documents and write to the database if they aren't there already"
-;  [id nlp-pipe db text]
-;  (let [ent-from-db (sql/get-by-id db diskio/entity-table id)]
-;      (if-not (nil? ent-from-db))))
-
 ;TODO: all IDs should be in the database since they were there when we built the id list before the function was called
 ;TODO: but if they aren't some really confusing shit could happen with the records so I should check this again in this function
 ;TODO: not sure if order of returned anything is guaranteed by corenlp for id-entity mapping
 ;TODO: use a better method that won't create duplicate entries or cause postgres to throw an exception etc etc etc etc
+
+
 (defn build-and-write-new-entity-records
   "Create new entity records from a list of ids and write them to a database"
   [ids pipe]
@@ -54,18 +50,36 @@
                           nil)]
     (merge kv-recs-existing kv-recs-pending)))
 
-(defn create-document-records-from-dbs
+(defn create-document-record
+  [id-entity-pairs document]
+  (->doc-rec
+    (:ID document)
+    (:TITLE document)
+    (diskio/doc-content document)
+    (filter #(every? (partial not= (:ner-tag %)) ["DATE" "NUMBER" "ORDINAL" "MISC"])
+            (get id-entity-pairs (:ID document)))))
+
+
+(defn create-document-records
   "Creating a document record may be slow since it calls the nlp library for records not already in the database"
   [ids nlp-pipe]
   (let [documents (diskio/docs-by-id ids)
-        id-entity-pairs (get-ent-record-list ids nlp-pipe)]
-    (for [document documents]
-      (->doc-rec
-        (:ID document)
-        (:TITLE document)
-        (diskio/doc-content document)
-        (filter #(every? (partial not= (:ner-tag %)) ["DATE" "NUMBER" "ORDINAL" "MISC"])
-          (get id-entity-pairs (:ID document)))))))
+        id-entity-pairs (get-ent-record-list (map :ID documents) nlp-pipe)]
+    (map (partial create-document-record id-entity-pairs) documents)))
+    ;(for [document documents]
+    ;  (->doc-rec
+    ;    (:ID document)
+    ;    (:TITLE document)
+    ;    (diskio/doc-content document)
+    ;    (filter #(every? (partial not= (:ner-tag %)) ["DATE" "NUMBER" "ORDINAL" "MISC"])
+    ;      (get id-entity-pairs (:ID document)))))))
+
+(defn create-document-records-split
+  "Call the create document records method, splitting into separate batches of ID's first"
+  [ids nlp-pipe batch-size]
+  (let [id-batches (partition-all batch-size ids)]
+    (mapcat #(create-document-records % nlp-pipe) id-batches)))
+
 
 (defn get-entities
   "Get real entities from a list of entities"
