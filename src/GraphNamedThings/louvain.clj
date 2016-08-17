@@ -152,7 +152,7 @@
         dQ-remove (if (> (count (get cs c-cur)) 1)   ;dQ of removing i from current community
                     (dQ-of-i-c g i c-cur-nodes)
                     0)]
-    (let [dQ-vals (map #(dQ-of-i-c g i (get cs %)) c-candidates)
+    (let [dQ-vals (pmap #(dQ-of-i-c g i (get cs %)) c-candidates)
           dQs (zipmap c-candidates dQ-vals)
           dQ-max (apply max-key val dQs)]
       (if (> (- (val dQ-max) dQ-remove) 0)
