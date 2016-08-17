@@ -22,7 +22,7 @@
 (defn distinct-edges-set
   "Returns the distinct edges of the graph as sets"
   [g]
-  (map (partial into #{}) (loom.alg/distinct-edges g)))
+  (loom.alg/distinct-edges g))
 
 (defn inside-edges
   ""
@@ -52,15 +52,20 @@
               (select-keys (:adj g) c)))))
 
 (defn inside-edges-sum
+  "Sum of the edge weights from each node inside c to other node inside c"
   [c g]
-  (reduce + (vals
-    (select-keys (community-edges c g) (inside-edges c g)))))
+  (reduce +
+          (map
+            #(get
+              (get (:adj g) (first %))
+              (second %))
+            (inside-edges c g))))
 
-(defn outside-connections-sum
-  [c g]
-  (reduce + (vals
-    (remove #(contains? (into #{} (inside-edges c g)) (key %))
-      (community-edges c g)))))
+(defn outside-connections-sum [c g]
+  "Sum of the edges connecting from nodes outside c to nodes inside c"
+  (reduce +
+    (map second
+     (remove #(every? (into #{} c) (first %)) (community-edges c g)))))
 
 (defn ki
   "Sum of weights of links to node i"

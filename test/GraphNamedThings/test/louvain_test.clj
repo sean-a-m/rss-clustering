@@ -62,7 +62,7 @@
 (deftest inside-edges-test
          (is
            (= (inside-edges '(:3 :2 :4) g4)
-              '(#{:4 :2} #{:4 :3} #{:2 :3}))))
+              '([:4 :2] [:4 :3] [:2 :3]))))
 
 (deftest get-keyval-node-test
          (is
