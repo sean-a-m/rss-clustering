@@ -7,7 +7,6 @@
             [clojure.math.combinatorics :as combo]
             [clojure.core.matrix.dataset :as ds]))
 
-
 (defn init-community
   "Returns the set of communities where each community contains one graph node"
   [g]
@@ -19,15 +18,10 @@
   (apply merge
   (map (fn [k] (zipmap (get m k) (repeat k))) (keys m))))
 
-(defn distinct-edges-set
-  "Returns the distinct edges of the graph as sets"
-  [g]
-  (loom.alg/distinct-edges g))
-
 (defn inside-edges
-  ""
+  "Edges connecting nodes within c"
   [c g]
-  (distinct-edges-set (loom.graph/subgraph g c)))
+  (loom.alg/distinct-edges (loom.graph/subgraph g c)))
 
 (defn get-keyval-node
   "Get the key value pair for one node k in an adjacency list"
@@ -55,17 +49,26 @@
   "Sum of the edge weights from each node inside c to other node inside c"
   [c g]
   (reduce +
-          (map
-            #(get
-              (get (:adj g) (first %))
-              (second %))
-            (inside-edges c g))))
+    (map
+      #(get
+        (get (:adj g) (first %))
+        (second %))
+      (inside-edges c g))))
 
-(defn outside-connections-sum [c g]
+(defn outside-connections-sum-old
+  [c g]
   "Sum of the edges connecting from nodes outside c to nodes inside c"
   (reduce +
     (map second
      (remove #(every? (into #{} c) (first %)) (community-edges c g)))))
+
+(defn outside-connections-sum
+  [c g]
+  "Sum of the edges connecting from nodes outside c to nodes inside c"
+  (reduce +
+    (map second (mapcat (fn [cn]
+                          (remove #(some (into #{} c) %) (get (:adj g) cn))) c))))
+
 
 (defn ki
   "Sum of weights of links to node i"
@@ -95,11 +98,23 @@
   (let [get-in-adj (partial get-in (:adj g))]
     (reduce +
       (map get-in-adj
-           (distinct-edges-set g)))))
+           (loom.alg/distinct-edges g)))))
 
 (defn dQQ
   "Change in modularity from moving i into C"
   [Ein kiin Etot ki-l m]
+  (-
+    (-
+      (/ (+ Ein kiin) (* 2 m))
+      (Math/pow (/ (+ Etot ki-l) (* 2 m)) 2))
+    (-
+      (/ Ein (* 2 m))
+      (Math/pow (/ Etot (* 2 m)) 2)
+      (Math/pow (/ ki-l (* 2 m)) 2))))
+
+(defn dQQ-two
+  "Change in modularity from moving i into C"
+  [m Ein kiin Etot ki-l]
   (-
     (-
       (/ (+ Ein kiin) (* 2 m))
@@ -117,6 +132,14 @@
         kiin (ki-in g c i)
         ki-l (ki g i)
         m (sum-all-weights g)]
+    (dQQ Ein kiin Etot ki-l m)))
+
+(defn dQ-i-c
+  "Calculate delta Q for moving node i into C"
+  [m ki-l g i c]
+  (let [Ein (inside-edges-sum c g)
+        Etot (outside-connections-sum c g)
+        kiin (ki-in g c i)]
     (dQQ Ein kiin Etot ki-l m)))
 
 (defn remove-node
@@ -164,10 +187,34 @@
         (update-comms i cs c-cur (key dQ-max))
         cs))))
 
+(defn max-dQ-rc-two
+  "Returns the community resulting in the maximum gain in modularity
+  g - graph
+  cs - map of communities to contained nodes
+  nodes - map of nodes to containing communities
+  i - node"
+  [g m cs i]
+  (let [ki-l (ki g i)
+        nodes (maplistreverse cs)
+        c-cur (get nodes i) ;current community containing i
+        c-cur-nodes (get cs c-cur)
+        n-conn (connected-nodes (list i) g)
+        c-candidates (into #{} (vals (select-keys nodes n-conn)))
+        dQ-remove (if (> (count (get cs c-cur)) 1)   ;dQ of removing i from current community
+                    (dQ-i-c m ki-l g i c-cur-nodes)
+                    0)]
+    (let [dQ-vals (pmap #(dQ-i-c m ki-l g i (get cs %)) c-candidates)
+          dQs (zipmap c-candidates dQ-vals)
+          dQ-max (apply max-key val dQs)]
+      (if (> (- (val dQ-max) dQ-remove) 0)
+        (update-comms i cs c-cur (key dQ-max))
+        cs))))
+
 (defn modularize
   "First pass"
   [g cs]
-  (reduce (partial max-dQ-rc g) cs (:nodeset g)))
+  (let [m (sum-all-weights g)]
+    (reduce (partial max-dQ-rc-two g m) cs (:nodeset g))))
 
 (defn new-edge
   "Create edge vector for n1 and connection n2 is community of"
@@ -196,14 +243,14 @@
         g' (loom.graph/weighted-graph)
         connecting-nodes (into #{} (mapcat (partial get-comm-node-sets g cs node-map) (keys cs)))
         new-edges (new-weighted-edge-vectors g cs node-map connecting-nodes)]
-    (reduce loom.graph/add-edges g' new-edges)))
+    [(reduce loom.graph/add-edges g' new-edges) cs]))
 
 (defn iterate-louvain
   [g]
-  (let [g' (->> (init-community g)
+  (let [[g' cs'] (->> (init-community g)
                 (modularize g)
                 (new-network g))]
-       g'))
+       [g' cs']))
 
 
 

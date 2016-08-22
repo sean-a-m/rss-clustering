@@ -32,32 +32,13 @@
 
 (def pipeline (new StanfordCoreNLP props))
 
-(def doc-recs (document/create-document-records-split (range 8500 9500) pipeline 100))
-(def doc-graph (document/create-document-graph doc-recs))
+;(def doc-recs (document/create-document-records-split (range 8500 9500) pipeline 100))
+
+;(def doc-graph (document/create-document-graph doc-recs))
 
 (deftest iterate-louvain-test
-         (is (= (:adj (iterate-louvain g4))
+         (is (= (:adj (first (iterate-louvain g4)))
                 {:3 {:8 7, :6 2}, :8 {:3 7, :6 3, :9 1}, :6 {:8 3, :3 2}, :9 {:8 1}})))
-
-
-(deftest distinct-edges-set-test
-  (is
-    (= '(#{:11 :3}
-          #{:10 :9}
-          #{:4 :1}
-          #{:4 :2}
-          #{:4 :3}
-          #{:7 :5}
-          #{:7 :6}
-          #{:1 :2}
-          #{:1 :3}
-          #{:1 :8}
-          #{:8 :5}
-          #{:8 :9}
-          #{:2 :3}
-          #{:2 :5}
-          #{:5 :6}) (distinct-edges-set g4))))
-
 
 (deftest inside-edges-test
          (is
