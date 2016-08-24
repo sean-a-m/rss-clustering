@@ -37,11 +37,7 @@
         (doall
           (csv/parse-csv fcsv)))))
 
-;path to test database
-(def sqlite-path "test/GraphNamedThings/data/documents.db")
 
-;query for tt-rss database
-(def sqlite-query "SELECT id, title, link, date_entered, content, lang, author, feed_id FROM rss_entries")
 
 (defn sqlite-db
   "Generate a database spec for sqlite using the given path"
@@ -51,15 +47,11 @@
    :subname     path
    })
 
-(defdb sq-kdb (sqlite-db sqlite-path))
+(defdb sq-kdb (sqlite-db bad/sqlite-path))
 
 (defentity rss_entries
            (database sq-kdb)
            (entity-fields :id :title :content :feed_id))
-
-(defentity entrecordstest
-           (database sq-kdb)
-           (entity-fields :k :v))
 
 (def psqldb
   {:classname "org.postgresql.Driver"
@@ -80,7 +72,8 @@
 (defn docs-by-id
   [id-list]
   (select rss_entries
-          (where {:id [in id-list]})))
+          (where {:id [in id-list]
+                  :feed_id [in '(52 54 62 65 77 102)]})))
 
 (defn doc-content
   "Returns title + content (parsed from html) for a given document entry as returned by docs-by-id"
@@ -94,38 +87,6 @@
   [id-list]
   (into {} (map #(vector (:ID %) (doc-content %)) (docs-by-id id-list))))
 
-(defn insert-ent-list
-  [ent-list]
-  (insert entrecordstest
-    (values ent-list)))
 
-(defn read-or-add
-  "Given a k v pair and a database, return v if k exists
-  if k doesn't exist, evaluate f, write k f and return f"
-  [f k db-entity]
-  (let [db-value (:v (first (select db-entity
-                             (where {:k k}))))]
-    (if-not (nil? db-value)
-      (do
-        (print "not nil")
-        (nippy/thaw db-value))
-      (do
-        (print "nil")
-          (insert db-entity
-                  (values {:k k :v (nippy/freeze f)}))
-          f))))
-
-
-(defn read-from-sqlite
-(
-  [query-string db]
-    (jdbc/query db query-string)
-  ))
-
-(def test-db (sqlite-db sqlite-path))
-
-(defn read-test-db
-  []
-  (read-from-sqlite sqlite-query test-db))
 
 

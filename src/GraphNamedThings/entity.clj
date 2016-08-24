@@ -6,8 +6,6 @@
            [clojure.string :as str]
            [clojure.set :as cset]))
 
-;TODO: figure out why this is here and what it was for
-(defrecord entity-table [ent-map ent-index])
 
 (defn word-set
   "Return set of all individual words within one entity"
@@ -27,31 +25,6 @@
   "Returns the id of the best coreference for the entity in the existing map (create new uuid if none exists)
   TODO: consider whether a new ID should just be the record hash again
   TODO: consider adding check for matching NER tag"
-  [ent-rec ent-index]
-  ;first filter for matching entity candidates by selecting anything with a matching word
-  (let [candidates (filter #(not= ent-rec %)
-                           (into #{}
-                             (flatten
-                               (vals
-                                 (select-keys ent-index (word-set ent-rec))))))
-        ;minimum similarity before rejecting matches, this is zero right now because it's sorting on the matching word with the highest length
-        ;and if there are no words the longest-matching function will return 0
-        min-threshold 0]
-    ;If there's at least one candidate then find the candidate with the best similarity coefficient, otherwise return a new id
-    (if (seq candidates)
-      (let [best-ent-candidate
-            (apply max-key second
-               (ent-similarity ent-rec candidates))]
-        ;if the best candidate passes a minimum similarity threshold, return that entity, otherwise, return itself
-        (if (> (second best-ent-candidate) min-threshold)
-          (first best-ent-candidate)
-          ent-rec))
-      ent-rec)))
-
-(defn best-coref2
-  "Returns the id of the best coreference for the entity in the existing map (create new uuid if none exists)
-  TODO: consider whether a new ID should just be the record hash again
-  TODO: consider adding check for matching NER tag"
   [ent-rec candidates]
   ;first filter for matching entity candidates by selecting anything with a matching word
   (let [;minimum similarity before rejecting matches, this is zero right now because it's sorting on the matching word with the highest length
@@ -67,15 +40,6 @@
           (first best-ent-candidate)
           ent-rec))
       ent-rec)))
-
-
-(defn add-entity-to-map
-  "Add entity record to map of entities, either generating a new uuid for it or using an existing uuid (for all entities corresponding
-  to the same coreference)"
-  [ent-rec ent-map ent-index]
-  (assoc ent-map
-    ent-rec
-    (best-coref ent-rec ent-index)))
 
 (defn index-word-entries
   "Add all words in an entity record to an index pointing from word to list of entity records containing that word"
@@ -99,7 +63,7 @@
                            (select-keys ent-index (word-set (first ent-recs)))))))]
     (assoc ent-map
       (first ent-recs)
-      (best-coref2 (first ent-recs) candidates))))
+      (best-coref (first ent-recs) candidates))))
 
 (defn get-entity-merge-map
   "Return a map of entity records returning to coreferent records"

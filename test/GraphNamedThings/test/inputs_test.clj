@@ -38,7 +38,7 @@
 
 
 (deftest verify-token-groups
-  (let [test-tokens (token-groups doc1a pipeline)]
+  (let [test-tokens (token-groups nlp-processed)]
     ;check hierarchy
     (is (= 2 (-> test-tokens
                  first

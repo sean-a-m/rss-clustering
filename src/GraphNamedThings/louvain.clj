@@ -1,11 +1,6 @@
 (ns GraphNamedThings.louvain
   (:require [loom.graph]
-            [loom.alg]
-            [clojure.core.matrix :as m]
-            [clojure.set :as cset]
-            [GraphNamedThings.util :as util]
-            [clojure.math.combinatorics :as combo]
-            [clojure.core.matrix.dataset :as ds]))
+            [loom.alg]))
 
 (defn init-community
   "Returns the set of communities where each community contains one graph node"
@@ -55,20 +50,12 @@
         (second %))
       (inside-edges c g))))
 
-(defn outside-connections-sum-old
-  [c g]
-  "Sum of the edges connecting from nodes outside c to nodes inside c"
-  (reduce +
-    (map second
-     (remove #(every? (into #{} c) (first %)) (community-edges c g)))))
-
 (defn outside-connections-sum
   [c g]
   "Sum of the edges connecting from nodes outside c to nodes inside c"
   (reduce +
     (map second (mapcat (fn [cn]
                           (remove #(some (into #{} c) %) (get (:adj g) cn))) c))))
-
 
 (defn ki
   "Sum of weights of links to node i"
@@ -112,28 +99,6 @@
       (Math/pow (/ Etot (* 2 m)) 2)
       (Math/pow (/ ki-l (* 2 m)) 2))))
 
-(defn dQQ-two
-  "Change in modularity from moving i into C"
-  [m Ein kiin Etot ki-l]
-  (-
-    (-
-      (/ (+ Ein kiin) (* 2 m))
-      (Math/pow (/ (+ Etot ki-l) (* 2 m)) 2))
-    (-
-      (/ Ein (* 2 m))
-      (Math/pow (/ Etot (* 2 m)) 2)
-      (Math/pow (/ ki-l (* 2 m)) 2))))
-
-(defn dQ-of-i-c
-  "Calculate delta Q for moving node i into C"
-  [g i c]
-  (let [Ein (inside-edges-sum c g)
-        Etot (outside-connections-sum c g)
-        kiin (ki-in g c i)
-        ki-l (ki g i)
-        m (sum-all-weights g)]
-    (dQQ Ein kiin Etot ki-l m)))
-
 (defn dQ-i-c
   "Calculate delta Q for moving node i into C"
   [m ki-l g i c]
@@ -155,7 +120,7 @@
   [c n cs]
   (update cs c #(cons n %)))
 
-(defn update-comms
+(defn update-community-list
   "update and return list of communities for community that i is moved into
   i - node
   cs - list of communities
@@ -164,30 +129,7 @@
   (add-node new-c i
     (remove-node old-c i cs)))
 
-
-(defn max-dQ-rc
-  "Returns the community resulting in the maximum gain in modularity
-  g - graph
-  cs - map of communities to contained nodes
-  nodes - map of nodes to containing communities
-  i - node"
-  [g cs i]
-  (let [nodes (maplistreverse cs)
-        c-cur (get nodes i) ;current community containing i
-        c-cur-nodes (get cs c-cur)
-        n-conn (connected-nodes (list i) g)
-        c-candidates (into #{} (vals (select-keys nodes n-conn)))
-        dQ-remove (if (> (count (get cs c-cur)) 1)   ;dQ of removing i from current community
-                    (dQ-of-i-c g i c-cur-nodes)
-                    0)]
-    (let [dQ-vals (pmap #(dQ-of-i-c g i (get cs %)) c-candidates)
-          dQs (zipmap c-candidates dQ-vals)
-          dQ-max (apply max-key val dQs)]
-      (if (> (- (val dQ-max) dQ-remove) 0)
-        (update-comms i cs c-cur (key dQ-max))
-        cs))))
-
-(defn max-dQ-rc-two
+(defn max-dQ
   "Returns the community resulting in the maximum gain in modularity
   g - graph
   cs - map of communities to contained nodes
@@ -207,22 +149,14 @@
           dQs (zipmap c-candidates dQ-vals)
           dQ-max (apply max-key val dQs)]
       (if (> (- (val dQ-max) dQ-remove) 0)
-        (update-comms i cs c-cur (key dQ-max))
+        (update-community-list i cs c-cur (key dQ-max))
         cs))))
 
 (defn modularize
   "First pass"
   [g cs]
   (let [m (sum-all-weights g)]
-    (reduce (partial max-dQ-rc-two g m) cs (:nodeset g))))
-
-(defn new-edge
-  "Create edge vector for n1 and connection n2 is community of"
-  [g cs node-map n1 n2]
-  (let [n2-c (get node-map n2) ;community n2 belongs to
-        n1-nodes (get cs n1)
-        n2-nodes (get cs n2-c)]
-    (vector n1 n2-c (sum-connections-between g n1-nodes n2-nodes))))
+    (reduce (partial max-dQ g m) cs (:nodeset g))))
 
 (defn get-comm-node-sets
   "All sets of connecting nodes for community c"

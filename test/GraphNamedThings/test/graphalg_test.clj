@@ -1,6 +1,6 @@
 (ns GraphNamedThings.test.graphalg_test
   (:require [GraphNamedThings.graphalg :refer :all]
-            [loom.graph]
+            [loom.graph :as loom]
             [loom.alg]
             [clojure.core.matrix :as m]
             [clojure.test :refer :all]))
@@ -28,6 +28,37 @@
      [:5 :6]
      [:5 :7]
      [:6 :7]))
+
+(def g2-weighted
+  (loom/weighted-graph
+    [:1 :2 2]
+    [:1 :3 4]
+    [:1 :4 1]
+    [:2 :3 7]
+    [:2 :4 4]
+    [:2 :5 2]
+    [:3 :4 4]
+    [:5 :6 8]
+    [:5 :7 2]
+    [:6 :7 6]))
+
+(def g4
+  (loom/weighted-graph
+    [:1 :2 2]
+    [:1 :3 4]
+    [:1 :4 1]
+    [:2 :3 7]
+    [:2 :4 4]
+    [:2 :5 2]
+    [:3 :4 4]
+    [:5 :6 8]
+    [:5 :7 2]
+    [:6 :7 6]
+    [:8 :5 3]
+    [:8 :1 4]
+    [:9 :8 1]
+    [:9 :10 4]
+    [:3 :11 6]))
 
 (def mat
   (m/array

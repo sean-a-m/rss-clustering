@@ -1,6 +1,5 @@
 (ns GraphNamedThings.inputs
-  (require [clojure.zip :as zip]
-           [GraphNamedThings.util :as util]
+  (require [GraphNamedThings.util :as util]
            [GraphNamedThings.nlputil :as nlputil]
            [GraphNamedThings.corenlpdefs :as nlpdefs])
   (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]
@@ -18,10 +17,9 @@
   This is just based on grouping adjacent tokens with identical entity tags (PERSON, PLACE, etc)"
   [tokens]
   (let [core-ner-list (map nlpdefs/get-ner-tag tokens)]
-    (->> core-ner-list
-         (partition-by #(not= "O" %))
-         (zip/seq-zip)
-         (util/nested-index))))
+    (flatten
+      (map-indexed #(repeat (count %2) %1)
+                   (partition-by #(not= "O" %) core-ner-list)))))
 
 (defn token-ner-id-pairs-to-tokens
   "Take a list of pairs of token objects and NER ID's and return just the list of tokens
@@ -56,6 +54,7 @@
         coref-ids
         (util/uuid!))))
 
+;will rename and remove normal token-groups once refactoring is complete
 (defn token-groups
   "Return all tokens records in a document given text and a CoreNLP pipeline object.
   This generates the following structure:
@@ -67,46 +66,8 @@
   TODO: should probably fold instead of group-by on NER IDs
   TODO: This function is way too big, at least split off the part defining the list of entities
   TODO: Something shouldn't be part of multiple coreferences.  Need to fix grouping for that"
-  [doc-text pipe]
-  (let [nlp-processed (nlpdefs/corenlp-annotate-doc doc-text pipe)
-        core-tokens (nlpdefs/get-tokens nlp-processed)
-        core-corefs (util/core-coref-list
-                      (nlpdefs/get-corefs nlp-processed))
-        ner-ids (ner-ids-from-tokens core-tokens)]
-    (let [entity-list
-    ;get just the list of tokens from a vector list
-    (map token-ner-id-pairs-to-tokens
-      ;return set of each entity
-      (vals (group-by second
-        ;filter out anything that isn't an entity
-        (filter #(not= "O" (nlpdefs/get-ner-tag (first %)))
-                ;vector of token objects and NER ID #'s
-                (map vector core-tokens ner-ids)))))]
-      ;only take tokens
-      (map (fn [v] (map #(first %) v))
-      (vals
-      ;group entity tokens by coref id
-        (group-by #(first (second %))
-        ;create entity-tokens - coref id's tuples
-          (map vector
-               entity-list
-              (map #(coref-ids-in-entity-list % core-corefs) entity-list))))))))
-
-;will rename and remove normal token-groups once refactoring is complete
-(defn token-groups-processed
-  "Return all tokens records in a document given text and a CoreNLP pipeline object.
-  This generates the following structure:
-  -List of all entities
-    -List of all spans representing an entity
-      -List of all tokens in a span
-        -Token (type CoreLabel)
-  TODO: There may be something in CoreNLP that is better suited for referencing a span than a list of tokens
-  TODO: should probably fold instead of group-by on NER IDs
-  TODO: This function is way too big, at least split off the part defining the list of entities
-  TODO: Something shouldn't be part of multiple coreferences.  Need to fix grouping for that"
-  [doc-text pipe]
-  (let [nlp-processed doc-text
-        core-tokens (nlpdefs/get-tokens nlp-processed)
+  [nlp-processed]
+  (let [core-tokens (nlpdefs/get-tokens nlp-processed)
         core-corefs (util/core-coref-list
                       (nlpdefs/get-corefs nlp-processed))
         ner-ids (ner-ids-from-tokens core-tokens)]
@@ -154,26 +115,17 @@
     (map (fn [e] (entity-string-from-list e doc-text)) ent-group)
     (entity-ner-tag-from-group ent-group)))
 
-;Define a multimethod so that non-seq keep working until refactoring is finished
-(defmulti token-entities (fn [doc-text pipe] (seq? doc-text)))
-
-;  "Process a document, returning a list of entity records"
-(defmethod token-entities false
-  [doc-text pipe]
-  (map #(entity-strings-from-group % doc-text)
-       (token-groups doc-text pipe)))
-
 (defn token-entities-from-document
   "Return a list of entity records from a single document"
-  [doc-text annotated pipe]
+  [doc-text annotated]
   (map #(entity-strings-from-group % doc-text)
-       (token-groups-processed annotated pipe)))
+       (token-groups annotated)))
 
-;  "Process a list of documents, returning a list of entity records"
-(defmethod token-entities true
+; "Process a list of documents, returning a list of entity records"
+(defn token-entities
   [doc-text pipe]
   (let [annotations (nlputil/text-list-to-annotations doc-text)]
     (do
       (. pipe annotate annotations)
-      (map #(token-entities-from-document (nlpdefs/get-words %) % pipe) annotations))))
+      (map #(token-entities-from-document (nlpdefs/get-words %) %) annotations))))
 

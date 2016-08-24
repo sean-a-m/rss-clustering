@@ -14,17 +14,6 @@
 
 (defrecord doc-rec [id title text entities])
 
-(defn doc-title
-  "This is just a placeholder for returning the document title from whatever data source will be used later"
-  []
-  (util/uuid!))
-
-;TODO: all IDs should be in the database since they were there when we built the id list before the function was called
-;TODO: but if they aren't some really confusing shit could happen with the records so I should check this again in this function
-;TODO: not sure if order of returned anything is guaranteed by corenlp for id-entity mapping
-;TODO: use a better method that won't create duplicate entries or cause postgres to throw an exception etc etc etc etc
-
-
 (defn build-and-write-new-entity-records
   "Create new entity records from a list of ids and write them to a database"
   [ids pipe]
@@ -66,13 +55,6 @@
   (let [documents (diskio/docs-by-id ids)
         id-entity-pairs (get-ent-record-list (map :ID documents) nlp-pipe)]
     (map (partial create-document-record id-entity-pairs) documents)))
-    ;(for [document documents]
-    ;  (->doc-rec
-    ;    (:ID document)
-    ;    (:TITLE document)
-    ;    (diskio/doc-content document)
-    ;    (filter #(every? (partial not= (:ner-tag %)) ["DATE" "NUMBER" "ORDINAL" "MISC"])
-    ;      (get id-entity-pairs (:ID document)))))))
 
 (defn create-document-records-split
   "Call the create document records method, splitting into separate batches of ID's first"
