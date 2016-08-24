@@ -29,10 +29,10 @@
   "Create new entity records from a list of ids and write them to a database"
   [ids pipe]
   (let [doc-content (diskio/doc-content-by-id ids)
-        entities (inputs/token-entities doc-content pipe)
+        entities (inputs/token-entities (vals doc-content) pipe)
         entities-serialized (map nippy/freeze entities)
-        id-entity-list (zipmap ids entities)
-        id-entity-list-serialized (map #(hash-map :k %1 :v %2) ids entities-serialized)]
+        id-entity-list (zipmap (keys doc-content) entities)
+        id-entity-list-serialized (map #(sorted-map :k %1 :v %2) (keys doc-content) entities-serialized)]
     (do
       (insert diskio/entitytest
               (values id-entity-list-serialized))
@@ -56,7 +56,7 @@
     (:ID document)
     (:TITLE document)
     (diskio/doc-content document)
-    (filter #(every? (partial not= (:ner-tag %)) ["DATE" "NUMBER" "ORDINAL" "MISC"])
+    (filter #(every? (partial not= (:ner-tag %)) ["DATE" "NUMBER" "ORDINAL" "MISC" "MONEY" "DURATION"])
             (get id-entity-pairs (:ID document)))))
 
 
@@ -88,7 +88,7 @@
 
 (defn item-entry
   [doc-rec entity]
-  [entity (:title doc-rec)])
+  [entity (:id doc-rec)])
 
 (defn ent-doc-set
   "Returns the set of all entity-document relations for one document"

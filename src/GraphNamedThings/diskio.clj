@@ -55,7 +55,7 @@
 
 (defentity rss_entries
            (database sq-kdb)
-           (entity-fields :id :title :content))
+           (entity-fields :id :title :content :feed_id))
 
 (defentity entrecordstest
            (database sq-kdb)
@@ -87,12 +87,12 @@
   [doc-entry]
   (str/join ". " (list
                          (:TITLE doc-entry)
-                         (parse-html-fragment (:CONTENT doc-entry)))))
+                         (parse-html-fragment (str/join (list " " (:CONTENT doc-entry))))))) ;adding a space is a hack to stop jsoup from crashing and should be handle smarter somehow
 
 (defn doc-content-by-id
   "List of document ID's (contained in database) -> list of document contents "
   [id-list]
-  (map doc-content (docs-by-id id-list)))
+  (into {} (map #(vector (:ID %) (doc-content %)) (docs-by-id id-list))))
 
 (defn insert-ent-list
   [ent-list]
