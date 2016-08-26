@@ -5,9 +5,7 @@
             [clojure.core.matrix.dataset :as ds]))
 
 ;TODO: split MCL and generic graph code into separate files
-
 ;TODO: remove repeating code by moving graph structure logic into column creation functions
-
 ;TODO: consider using sparse arrays
 
 (defmulti graph-to-adj-mat loom.graph/weighted?)
@@ -137,7 +135,7 @@
     (->> columns
         add-self-loops
          ;TODO: figure out a reasonable iteration number
-        (mcl-iterate 100)
+        (mcl-iterate 10)
         mcl-connected
         (ds-connected-to-keys column-names))))
 

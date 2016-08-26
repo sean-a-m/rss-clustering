@@ -20,4 +20,7 @@
   :main ^:skip-aot GraphNamedThings.core
   :target-path "target/%s"
   :jvm-opts ["-Xms2g"]
+  :global-vars {*warn-on-reflection* true
+                *unchecked-math* true
+                *assert* false}
   :profiles {:uberjar {:aot :all}})
