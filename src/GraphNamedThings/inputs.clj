@@ -54,6 +54,32 @@
         coref-ids
         (util/uuid!))))
 
+(defn token-group-from-vector
+  [token-vector]
+  (map :token token-vector))
+
+;TODO: separate group and filters
+(defn group-and-filter-tokens
+  "Group tokens by span and filter out non-entities"
+  [nlp-tokens]
+  (let [ner-ids (ner-ids-from-tokens nlp-tokens)]
+    (->> nlp-tokens
+         (map #(hash-map :span-id %1 :token %2) ner-ids) ;create a list of tokens and corresponding span id's
+         (filter #(not= "O" (nlpdefs/get-ner-tag (:token %))))  ;remove tokens with no entity tag
+         (group-by :span-id)  ;group token objects by the span ids
+         (vals) ;take only the values (index isn't important)
+         (map token-group-from-vector))))  ;get collections of the tokens from each span (remaining in the correct order)
+
+(defn create-entities-from-tokens
+  [nlp-tokens corefs]
+  (->> nlp-tokens
+       (group-and-filter-tokens)
+       (map #(hash-map :coref-id (first (coref-ids-in-entity-list % corefs)) :tokens %))   ;TODO: just taking the first id here isn't accurate
+       (group-by :coref-id)
+       (vals)))
+
+
+
 ;will rename and remove normal token-groups once refactoring is complete
 (defn token-groups
   "Return all tokens records in a document given text and a CoreNLP pipeline object.
