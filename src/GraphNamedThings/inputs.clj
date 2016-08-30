@@ -9,9 +9,6 @@
 ;defines an entity derived from processing a document
 (defrecord entity [strings ner-tag])
 
-;TODO: Decide if this should be removed
-(defrecord doc-record [timestamp uid title source tokens text])
-
 (defn ner-ids-from-tokens
   "Return a list of id's, where each unique ID corresponds to one entity, from a list of tokens
   This is just based on grouping adjacent tokens with identical entity tags (PERSON, PLACE, etc)"
@@ -21,12 +18,6 @@
       (map-indexed #(repeat (count %2) %1)
                    (partition-by #(not= "O" %) core-ner-list)))))
 
-(defn token-ner-id-pairs-to-tokens
-  "Take a list of pairs of token objects and NER ID's and return just the list of tokens
-  TODO: This doesn't make sense, individual lists exist before the pair of lists exists"
-  [token-ner-id-pairs]
-  (map first token-ner-id-pairs))
-
 (defn contained-in-chain-id
   "Returns the chain id if the coreference chain contains the mention span"
   [entity-list chain]
@@ -34,124 +25,76 @@
         ent-start (nlpdefs/get-word-index (first entity-list))
         ent-end (nlpdefs/get-word-index (last entity-list))
         ent-sent (nlpdefs/get-sentence-index (first entity-list))]
-        (if (seq
+    (if (seq
           (->> coref-mentions
                (filter #(= ent-sent (.sentNum %)))
                (filter #(>= ent-end (.headIndex %)))
                (filter #(<= ent-start (.headIndex %)))))
-           (.getChainID chain)
-           nil)))
+      (.getChainID chain)
+      nil)))
 
 (defn coref-ids-in-entity-list
   "Returns all coref chain ID's the entity span is a member of"
   [entity-list corefs]
-    (let [coref-ids
-      ;remove nil items from the list, since they only represent an the result of a list of entities that was not contained in a coreference chain (not relevant)
-      (remove nil?
-        (map #(contained-in-chain-id entity-list %) corefs))]
-      ;Give items without a coreference their own ID
-      (if (seq coref-ids)
-        coref-ids
-        (util/uuid!))))
+  (let [coref-ids
+        ;remove nil items from the list, since they only represent an the result of a list of entities that was not contained in a coreference chain (not relevant)
+        (remove nil?
+                (map #(contained-in-chain-id entity-list %) corefs))]
+    ;Give items without a coreference their own ID
+    (if (seq coref-ids)
+      coref-ids
+      (util/uuid!))))
 
-(defn token-group-from-vector
-  [token-vector]
-  (map :token token-vector))
+(defn- get-token-group-string
+  [tokens]
+  (map nlpdefs/get-words tokens))
 
-;TODO: separate group and filters
-(defn group-and-filter-tokens
-  "Group tokens by span and filter out non-entities"
-  [nlp-tokens]
-  (let [ner-ids (ner-ids-from-tokens nlp-tokens)]
-    (->> nlp-tokens
-         (map #(hash-map :span-id %1 :token %2) ner-ids) ;create a list of tokens and corresponding span id's
-         (filter #(not= "O" (nlpdefs/get-ner-tag (:token %))))  ;remove tokens with no entity tag
-         (group-by :span-id)  ;group token objects by the span ids
-         (vals) ;take only the values (index isn't important)
-         (map token-group-from-vector))))  ;get collections of the tokens from each span (remaining in the correct order)
+(defn- vector-strings
+  "Turn a vector of tokens into a string."
+  ;TODO: Assuming tokens are separated by a space only makes sense for adjacent tokens with identical named entity tags..maybe
+  [obj-vector]
+  (clojure.string/join " " (get-token-group-string obj-vector)))
 
-(defn create-entities-from-tokens
-  [nlp-tokens corefs]
-  (->> nlp-tokens
-       (group-and-filter-tokens)
-       (map #(hash-map :coref-id (first (coref-ids-in-entity-list % corefs)) :tokens %))   ;TODO: just taking the first id here isn't accurate
-       (group-by :coref-id)
-       (vals)))
+(defn collect-entities
+  "Collect tokens into sequences of matching entities"
+  [tokens]
+  (->> tokens
+       (partition-by #(not= "O" (nlpdefs/get-ner-tag %)))
+       (remove #(= "O" (nlpdefs/get-ner-tag (first %))))))
 
+(defn- collect-corefs
+  "Group token spans by matching coreferences"
+  [corefs collected-entities]
+  (vals
+    (group-by #(coref-ids-in-entity-list % corefs) collected-entities)))
 
-
-;will rename and remove normal token-groups once refactoring is complete
-(defn token-groups
-  "Return all tokens records in a document given text and a CoreNLP pipeline object.
-  This generates the following structure:
-  -List of all entities
-    -List of all spans representing an entity
-      -List of all tokens in a span
-        -Token (type CoreLabel)
-  TODO: There may be something in CoreNLP that is better suited for referencing a span than a list of tokens
-  TODO: should probably fold instead of group-by on NER IDs
-  TODO: This function is way too big, at least split off the part defining the list of entities
-  TODO: Something shouldn't be part of multiple coreferences.  Need to fix grouping for that"
-  [nlp-processed]
-  (let [core-tokens (nlpdefs/get-tokens nlp-processed)
-        core-corefs (util/core-coref-list
-                      (nlpdefs/get-corefs nlp-processed))
-        ner-ids (ner-ids-from-tokens core-tokens)]
-    (let [entity-list
-          ;get just the list of tokens from a vector list
-          (map token-ner-id-pairs-to-tokens
-               ;return set of each entity
-               (vals (group-by second
-                               ;filter out anything that isn't an entity
-                               (filter #(not= "O" (nlpdefs/get-ner-tag (first %)))
-                                       ;vector of token objects and NER ID #'s
-                                       (map vector core-tokens ner-ids)))))]
-      ;only take tokens
-      (map (fn [v] (map #(first %) v))
-           (vals
-             ;group entity tokens by coref id
-             (group-by #(first (second %))
-                       ;create entity-tokens - coref id's tuples
-                       (map vector
-                            entity-list
-                            (map #(coref-ids-in-entity-list % core-corefs) entity-list))))))))
-
-;TODO: Change doc-text to take text from annotation object to simplify arguments in later functions in this file
-(defn entity-string-from-list
-  "Returns the string corresponding to the span defined by a list of tokens
-  TODO: Replace with library function that I never found"
-  [ent-list doc-text]
-  (let [span-start (nlpdefs/get-token-start-offset (first ent-list))
-        span-end (nlpdefs/get-token-end-offset (last ent-list))]
-    (subs doc-text span-start span-end)))
-
-(defn entity-ner-tag-from-group
-  "Returns NER tag from a group of tokens
-  TODO: make this smarter about what to do if tags conflict (or throw an error)"
-  [ent-group]
-  (nlpdefs/get-ner-tag
-    (first
-      (first
-        ent-group))))
-
-(defn entity-strings-from-group
-  "Returns group of entity strings contained within a coreferentiated group"
-  [ent-group doc-text]
+(defn- create-entity-from-vector
+  "Create an entity record from a list of vectors of corenlp tokens"
+  ;TODO: Simplify structure
+  [ent-vector]
   (->entity
-    (map (fn [e] (entity-string-from-list e doc-text)) ent-group)
-    (entity-ner-tag-from-group ent-group)))
+    (map vector-strings ent-vector)
+    (nlpdefs/get-ner-tag (first (first ent-vector))))) ;All of the tokens in the list should be the same; this takes the first token inside the first vector in the list
 
-(defn token-entities-from-document
-  "Return a list of entity records from a single document"
-  [doc-text annotated]
-  (map #(entity-strings-from-group % doc-text)
-       (token-groups annotated)))
+(defn get-entities-from-document-vector
+  "Retrieve entities from the vector of tokens and coreference list from a document annotation"
+  [tokens corefs]
+  (->> tokens
+      (collect-entities)
+      (collect-corefs corefs)
+      (map create-entity-from-vector)))
 
-; "Process a list of documents, returning a list of entity records"
-(defn token-entities
+(defn get-document-entities
+  "Retrieve the list of entity records belonging to one document annotation"
+  [annotation]
+  (let [tokens (nlpdefs/get-tokens annotation)
+        corefs (vals (nlpdefs/get-corefs annotation))]  ;get-corefs returns a hash map of java corefchain objects
+    (get-entities-from-document-vector tokens corefs)))
+
+(defn get-entity-lists
+  "Process a list of documents, returning a list of entity records"
   [doc-text pipe]
   (let [annotations (nlputil/text-list-to-annotations doc-text)]
     (do
       (. pipe annotate annotations)
-      (map #(token-entities-from-document (nlpdefs/get-words %) %) annotations))))
-
+      (map get-document-entities annotations))))
