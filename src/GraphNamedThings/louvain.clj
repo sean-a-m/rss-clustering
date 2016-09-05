@@ -6,192 +6,114 @@
   "Returns the set of communities where each community contains one graph node"
   [g]
   (apply merge
-    (map #(hash-map % (list %)) (:nodeset g))))
+         (map #(hash-map % (list %)) (:nodeset g))))
 
-(defn maplistreverse
+(defn- maplistreverse
+  "Reverse a map.  Not good if k repeats"
   [m]
   (apply merge
-  (map (fn [k] (zipmap (get m k) (repeat k))) (keys m))))
-
-(defn inside-edges
-  "Edges connecting nodes within c"
-  [c g]
-  (loom.alg/distinct-edges (loom.graph/subgraph g c)))
-
-(defn get-keyval-node
-  "Get the key value pair for one node k in an adjacency list"
-  [adj-list k]
-  (zipmap
-    (map #(into #{} (vector k (key %))) (get adj-list k))
-    (vals (get adj-list k))))
-
-(defn community-edges
-  "Get all edges connected to the community of nodes c.  c must be a set"
-  [c g]
-  (let [all-nodes (select-keys (:adj g) c)]
-    (apply merge
-      (map (partial get-keyval-node all-nodes) c))))
-
-(defn connected-nodes
-  "Nodes connected to community c in g"
-  [c g]
-  (into #{}
-    (mapcat keys
-            (vals
-              (select-keys (:adj g) c)))))
-
-(defn inside-edges-sum
-  "Sum of the edge weights from each node inside c to other node inside c"
-  [c g]
-  (reduce +
-    (map
-      #(get
-        (get (:adj g) (first %))
-        (second %))
-      (inside-edges c g))))
+         (map (fn [k] (zipmap (get m k) (repeat k))) (keys m))))
 
 (defn outside-connections-sum
   [c g]
   "Sum of the edges connecting from nodes outside c to nodes inside c"
   (reduce +
-    (map second (mapcat (fn [cn]
-                          (remove #(some (into #{} c) %) (get (:adj g) cn))) c))))
-
+          (map second (mapcat (fn [cn]
+                                (remove #(some (into #{} c) %) (get (:adj g) cn))) c))))
 (defn ki
   "Sum of weights of links to node i"
   [g i]
   (reduce +
-    (vals
-      (get (:adj g) i))))
+          (vals
+            (get (:adj g) i))))
 
 (defn ki-in
   "Sum of weights of links from node i to community c"
   [g c i]
   (reduce +
-    (vals
-      (select-keys (get (:adj g) i) c))))
+          (vals
+            (select-keys (get (:adj g) i) c))))
 
-(defn sum-connections-between
-  [g c1 c2]
-  (reduce +
-    (map
-      #(reduce +
-        (vals
-          (select-keys (get (:adj g) %) c2))) c1)))
-
-(defn sum-all-weights
+(defn total-link-weight
   "The sum of all weights in an undirected weighted graph"
   [g]
   (let [get-in-adj (partial get-in (:adj g))]
     (reduce +
-      (map get-in-adj
-           (loom.alg/distinct-edges g)))))
+            (map get-in-adj
+                 (loom.alg/distinct-edges g)))))
 
-(defn dQQ
-  "Change in modularity from moving i into C"
-  [Ein kiin Etot ki-l m]
-  (-
-    (-
-      (/ (+ Ein kiin) (* 2 m))
-      (Math/pow (/ (+ Etot ki-l) (* 2 m)) 2))
-    (-
-      (/ Ein (* 2 m))
-      (Math/pow (/ Etot (* 2 m)) 2)
-      (Math/pow (/ ki-l (* 2 m)) 2))))
+(defn comm-calc
+  [c g]
+  (hash-map :components c :c-tot (outside-connections-sum c g)))
 
-(defn dQ-i-c
-  "Calculate delta Q for moving node i into C"
-  [m ki-l g i c]
-  (let [Ein (inside-edges-sum c g)
-        Etot (outside-connections-sum c g)
-        kiin (ki-in g c i)]
-    (dQQ Ein kiin Etot ki-l m)))
+(defn community-precalc
+  [c-init-list g]
+  (apply merge
+         (pmap #(hash-map (key %) (comm-calc (val %) g)) c-init-list)))
 
-(defn remove-node
-  "Return list of communities with node n removed from community c in communities cs"
-  [c n cs]
-  (let [old-c-vals (get cs c)]
-    (if (> (count old-c-vals) 1)
-      (update cs c #(remove (partial = n) %))
-      (dissoc cs c))))
+(defn community-recalc
+  [g cs i c1 c2]
+  (let [c1-components (get (get cs c1) :components)
+        c1-components-new (remove #(= i %) c1-components)
+        c2-components (get (get cs c2) :components)
+        c2-components-new (cons i c2-components)
+        cs' (if (> 2 (count c1-components))
+              (dissoc! cs c1)
+              (assoc! cs c1 (comm-calc c1-components-new g)))]
+    (assoc! cs' c2 (comm-calc (distinct c2-components-new) g))))
 
-(defn add-node
-  "add node n to comm c in cs"
-  [c n cs]
-  (update cs c #(cons n %)))
+(defn select-keys-trans
+  [m ks]
+  (apply merge (map #(hash-map % (get m %)) ks)))
 
-(defn update-community-list
-  "update and return list of communities for community that i is moved into
-  i - node
-  cs - list of communities
-  new-c - new community to move i to"
-  [i cs old-c new-c]
-  (add-node new-c i
-    (remove-node old-c i cs)))
+(defn dQ
+  [g m ki-i i c]
+  (let [c-edge-weights (:c-tot c)
+        connections-to (ki-in g (:components c) i)]
+    (- connections-to
+       (/ (* ki-i c-edge-weights)
+          (* 2 m)))))
 
 (defn max-dQ
-  "Returns the community resulting in the maximum gain in modularity
-  g - graph
-  cs - map of communities to contained nodes
-  nodes - map of nodes to containing communities
-  i - node"
-  [g m cs i]
-  (let [ki-l (ki g i)
-        nodes (maplistreverse cs)
-        c-cur (get nodes i) ;current community containing i
-        c-cur-nodes (get cs c-cur)
-        n-conn (connected-nodes (list i) g)
-        c-candidates (into #{} (vals (select-keys nodes n-conn)))
-        dQ-remove (if (> (count (get cs c-cur)) 1)   ;dQ of removing i from current community
-                    (dQ-i-c m ki-l g i c-cur-nodes)
-                    0)]
-    (let [dQ-vals (pmap #(dQ-i-c m ki-l g i (get cs %)) c-candidates)
-          dQs (zipmap c-candidates dQ-vals)
-          dQ-max (apply max-key val dQs)]
-      (if (> (- (val dQ-max) dQ-remove) 0)
-        (update-community-list i cs c-cur (key dQ-max))
-        cs))))
+  [g m cs-node-vector i]
+  (let [ki-i (ki g i)
+        [cs node-index] cs-node-vector
+        cur-node (get node-index i)
+        neighboring-nodes (keys (get (:adj g) i))
+        candidate-comms (distinct (map (partial get node-index) neighboring-nodes))
+        c-candidate-c (select-keys-trans cs candidate-comms)
+        dQs (apply merge (map #(hash-map (key %) (dQ g m ki-i i (val %))) c-candidate-c))
+        dQ-max (apply max-key val dQs)]
+    (if (> (val dQ-max) 0)
+      [(community-recalc g cs i cur-node (key dQ-max)) (assoc! node-index i (key dQ-max))]
+      [cs node-index])))
 
-(defn modularize
-  "First pass"
-  [g cs]
-  (let [m (sum-all-weights g)]
-    (reduce (partial max-dQ g m) cs (:nodeset g))))
 
-(defn get-comm-node-sets
-  "All sets of connecting nodes for community c"
-  [g cs node-map c]
-  (let [community-nodes (get cs c)
-        connected-communities (into #{} (map (partial get node-map) (connected-nodes community-nodes g)))]
-    (remove #(not= 2 (count %)) ;remove
-      (into #{} (map (partial sorted-set c) connected-communities)))))
+(defn max-graph-modularity
+  [g m cs-node-vector]
+  (let [[cs node-index] cs-node-vector
+        csi (transient cs)
+        node-index-i (transient node-index)]
+    (loop [cs-node-vector [csi node-index-i] nodes (keys cs)]
+      (if (empty? nodes)
+        (vector (persistent! (first cs-node-vector)) (persistent! (second cs-node-vector)))
+        (recur (max-dQ g m cs-node-vector (first nodes)) (rest nodes))))))
 
-(defn new-weighted-edge-vectors
-  [g cs node-map connecting-nodes]
-  (map #(vector (first %) (last %) (sum-connections-between g (get cs (first %)) (get cs (second %)))) connecting-nodes))
-
-(defn new-network
-  "Returns a new graph using the communities cs as the nodes"
-  [g cs]
-  (let [node-map (maplistreverse cs)
-        g' (loom.graph/weighted-graph)
-        connecting-nodes (into #{} (mapcat (partial get-comm-node-sets g cs node-map) (keys cs)))
-        new-edges (new-weighted-edge-vectors g cs node-map connecting-nodes)]
-    [(reduce loom.graph/add-edges g' new-edges) cs]))
-
-(defn iterate-louvain
+;TODO: verify that maximum iteration limit is actually neccessary
+(defn iterate-louvain-modularity
+  "Iterate until community vector no longer changes or max-iteration limit is reached"
   [g]
-  (let [[g' cs'] (->> (init-community g)
-                (modularize g)
-                (new-network g))]
-       [g' cs']))
-
-
-
-
-
-
-
-
+  (let [cs (community-precalc (init-community g) g)
+        node-index (maplistreverse (init-community g))
+        m (total-link-weight g)
+        f-max-modularity (partial max-graph-modularity g m)
+        cs-node-vector [cs node-index]
+        limit 10]
+    (loop [csnodevector cs-node-vector iterations 0]
+      (let [new-vector (f-max-modularity csnodevector)]
+        (if (and (not= (first new-vector) (first csnodevector))
+                 (< limit iterations))
+          (recur new-vector (inc iterations))
+          new-vector)))))
 
 
