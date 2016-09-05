@@ -57,8 +57,7 @@
   {:classname "org.postgresql.Driver"
    :subprotocol "postgresql"
    :subname "//localhost:5432/adb"
-   ; Any additional keys are passed to the driver
-   ; as driver-specific properties.
+
    :user bad/psql-user
    :password bad/psql-pass})
 
@@ -73,7 +72,7 @@
   [id-list]
   (select rss_entries
           (where {:id [in id-list]
-                  :feed_id [in '(52 54 62 65 77 102)]})))
+                  :feed_id [in [30 52 53 54 56 61 62 65 66 67 93 94 102]]})))
 
 (defn doc-content
   "Returns title + content (parsed from html) for a given document entry as returned by docs-by-id"

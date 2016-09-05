@@ -33,8 +33,8 @@
   (let [db-records (diskio/select-id-list ids)
         existing-rec-ids (into #{} (map :k db-records))
         pending-rec-ids (cset/difference (into #{} ids) existing-rec-ids)
-        kv-recs-existing (zipmap (map :k db-records) (map #(nippy/thaw (:v %)) db-records))
-        kv-recs-pending (if (seq pending-rec-ids)
+        kv-recs-existing (zipmap (map :k db-records) (map #(nippy/thaw (:v %)) db-records))  ;records that are already in the database
+        kv-recs-pending (if (seq pending-rec-ids)                                             ;records that still need to be built
                           (build-and-write-new-entity-records pending-rec-ids pipe)
                           nil)]
     (merge kv-recs-existing kv-recs-pending)))
@@ -45,7 +45,7 @@
     (:ID document)
     (:TITLE document)
     (diskio/doc-content document)
-    (filter #(every? (partial not= (:ner-tag %)) ["DATE" "NUMBER" "ORDINAL" "MISC" "MONEY" "DURATION"])
+    (filter #(every? (partial not= (:ner-tag %)) ["DATE" "NUMBER" "ORDINAL" "MISC" "MONEY" "DURATION" "TIME" "PERCENT" "SET"])
             (get id-entity-pairs (:ID document)))))
 
 
