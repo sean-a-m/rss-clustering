@@ -23,6 +23,6 @@
   "Floating point comparison using absolute tolerance"
   [eps first second]
   (> eps
-     (util/abs
+     (Math/abs
        (- first second))))
 

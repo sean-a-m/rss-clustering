@@ -26,7 +26,7 @@
 
 (def tag-list-simple (map nlpdefs/get-ner-tag nlp-tokens-simple))
 
-(def nlp-corefs (util/core-coref-list
+(def nlp-corefs (into #{}
                       (nlpdefs/get-corefs nlp-processed)))
 
 
