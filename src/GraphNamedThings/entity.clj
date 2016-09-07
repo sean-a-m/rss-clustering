@@ -16,9 +16,8 @@
 (defn ent-similarity
   "Return a list of entity keys and similarity values for a list ent-list compared against an entity record ent-rec"
   [ent-rec ent-list]
-    (map #(vector % (nlputil/longest-matching
-                       (word-set ent-rec)
-                       (word-set %)))
+    (map #(vector % (nlputil/longest-matching (word-set ent-rec)
+                                              (word-set %)))
          ent-list))
 
 (defn best-coref
@@ -52,15 +51,21 @@
   [ent-recs ent-index]
   (reduce #(index-word-entries %2 %1) ent-index ent-recs))
 
+(defn get-coref-candidates
+  "Return all possible coreference candidates"
+  [ent-index ent-rec ent-recs]
+  (let [filtered-ent-recs (filter #(= (:ner-tag %) (:ner-tag ent-rec)) ent-recs)]  ;filter out anything that doesn't have a matching tag
+    (cset/intersection
+      (into #{} filtered-ent-recs)
+      (into #{}
+            (flatten
+              (vals
+                (select-keys ent-index (word-set ent-rec))))))))
+
 (defn merge-entity
   "Merge coreferent entities, returning a map pointing from each entity to a coreference or an id"
   [ent-index ent-map ent-recs]
-  (let [candidates (cset/intersection
-                     (into #{} (rest ent-recs))
-                     (into #{}
-                       (flatten
-                         (vals
-                           (select-keys ent-index (word-set (first ent-recs)))))))]
+  (let [candidates (get-coref-candidates ent-index (first ent-recs) (rest ent-recs))]
     (assoc ent-map
       (first ent-recs)
       (best-coref (first ent-recs) candidates))))
@@ -71,6 +76,7 @@
   (let [ent-index (index-entities ent-recs {})]
     (reduce (partial merge-entity ent-index) ent-map (util/tails ent-recs))))
 
+;TODO: record sounds like record
 (defn get-entity-id
   "Iterate through the index of entities until hitting the one where the key and value are identical (doesn't point to
   any other entity"
