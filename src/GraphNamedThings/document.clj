@@ -1,67 +1,29 @@
 (ns GraphNamedThings.document
-  (require [GraphNamedThings.util :as util]
-           [GraphNamedThings.inputs :as inputs]
-           [GraphNamedThings.entity :as entity]
-           [GraphNamedThings.diskio :as diskio]
+  (require [GraphNamedThings.entity :as entity]
            [loom.graph :as graph]
-           [clojure.math.combinatorics :as combo]
-           [clojure.java.jdbc :as sql]
-           [clojure.set :as cset]
-           [taoensso.nippy :as nippy]
-           [korma.db :refer :all]
-           [korma.core :refer :all]))
+           [clojure.math.combinatorics :as combo]))
 
 
 (defrecord doc-rec [id title text entities])
 
-(defn build-and-write-new-entity-records
-  "Create new entity records from a list of ids and write them to a database"
-  [ids pipe]
-  (let [doc-content (diskio/doc-content-by-id ids)
-        entities (inputs/get-entity-lists (vals doc-content) pipe)
-        entities-serialized (map nippy/freeze entities)
-        id-entity-list (zipmap (keys doc-content) entities)
-        id-entity-list-serialized (map #(sorted-map :k %1 :v %2) (keys doc-content) entities-serialized)]
-    (do
-      (insert diskio/entitytest
-              (values id-entity-list-serialized))
-      id-entity-list)))
-
-(defn get-ent-record-list
-  "Get list of document records from text ids"
-  [ids pipe]
-  (let [db-records (diskio/select-id-list ids)
-        existing-rec-ids (into #{} (map :k db-records))
-        pending-rec-ids (cset/difference (into #{} ids) existing-rec-ids)
-        kv-recs-existing (zipmap (map :k db-records) (map #(nippy/thaw (:v %)) db-records))  ;records that are already in the database
-        kv-recs-pending (if (seq pending-rec-ids)                                             ;records that still need to be built
-                          (build-and-write-new-entity-records pending-rec-ids pipe)
-                          nil)]
-    (merge kv-recs-existing kv-recs-pending)))
 
 (defn create-document-record
-  [id-entity-pairs document]
+  "Create a document record given document data and functions to map data to id, title, text, and entity records"
+  [id-map title-map text-map entity-record-map data]
   (->doc-rec
-    (:ID document)
-    (:TITLE document)
-    (diskio/doc-content document)
-    (filter #(every? (partial not= (:ner-tag %)) ["DATE" "NUMBER" "ORDINAL" "MISC" "MONEY" "DURATION" "TIME" "PERCENT" "SET"])
-            (get id-entity-pairs (:ID document)))))
-
+    (id-map data)
+    (title-map data)
+    (text-map data)
+    (entity-record-map data)))
 
 (defn create-document-records
-  "Creating a document record may be slow since it calls the nlp library for records not already in the database"
-  [ids nlp-pipe]
-  (let [documents (diskio/docs-by-id ids)
-        id-entity-pairs (get-ent-record-list (map :ID documents) nlp-pipe)]
-    (map (partial create-document-record id-entity-pairs) documents)))
-
-(defn create-document-records-split
-  "Call the create document records method, splitting into separate batches of ID's first"
-  [ids nlp-pipe batch-size]
-  (let [id-batches (partition-all batch-size ids)]
-    (mapcat #(create-document-records % nlp-pipe) id-batches)))
-
+  "Map set of data to create document records"
+  [id-map title-map text-map entity-record-map data]
+  (map (partial create-document-record
+                id-map
+                title-map
+                text-map
+                entity-record-map) data))
 
 (defn get-entities
   "Get real entities from a list of entities"
@@ -100,7 +62,6 @@
   (let [[maybe-pair weight] item]
     (if (seq? maybe-pair)
       (vector (first maybe-pair) (second maybe-pair) weight))))
-
 
 (defn create-document-graph
   "Create a graph where nodes represent document records and edges represent shared entities"
