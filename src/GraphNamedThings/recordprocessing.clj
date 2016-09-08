@@ -1,12 +1,14 @@
-(ns GraphNamedThings.docsfromrssdb
+(ns GraphNamedThings.recordprocessing
   (require [GraphNamedThings.inputs :as inputs]
-           [GraphNamedThings.diskio :as diskio]
+           [GraphNamedThings.dbio :as diskio]
            [GraphNamedThings.document :as document]
            [clojure.set :as cset]
            [taoensso.nippy :as nippy]
            [korma.db :refer :all]
            [korma.core :refer :all]))
 
+;tags that shouldn't be used for classifying documents
+(def excluded-tags ["DATE" "NUMBER" "ORDINAL" "MISC" "MONEY" "DURATION" "TIME" "PERCENT" "SET"])
 
 (defn- build-and-write-new-entity-records
   "Create new entity records from a list of ids and write them to a database"
@@ -39,7 +41,7 @@
 (defn entity-record-mapping
   "Takes set of entity records and individual document item and returns the entity records corresponding to that document"
   [entity-records data-item]
-  (filter #(every? (partial not= (:ner-tag %)) ["DATE" "NUMBER" "ORDINAL" "MISC" "MONEY" "DURATION" "TIME" "PERCENT" "SET"])
+  (filter #(every? (partial not= (:ner-tag %)) excluded-tags)
           (get entity-records (:ID data-item))))
 
 (defn create-entity-records
