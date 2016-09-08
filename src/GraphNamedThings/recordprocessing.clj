@@ -61,7 +61,7 @@
     [nlp-pipe documents]
     (let [entity-records (create-entity-records nlp-pipe documents)
           entity-mapping (partial entity-record-mapping entity-records)]
-      (mapcat (partial document/create-document-record id-mapping title-mapping content-mapping entity-mapping) documents)))
+      (map (partial document/create-document-record id-mapping title-mapping content-mapping entity-mapping) documents)))
 
 (defn create-document-records-batched
   "Create a set of document records given a set of document ids corresponding to database record, an NLP pipleine object, and the size of the document batches to process"

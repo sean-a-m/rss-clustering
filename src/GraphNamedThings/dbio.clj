@@ -10,7 +10,7 @@
            [GraphNamedThings.config :as config])
   (:import org.jsoup.Jsoup))
 
-(defn sqlite-db
+(def sqlite-db
   {:classname   "org.sqlite.JDBC"
    :subprotocol "sqlite"
    :subname     config/input-db-path
@@ -26,6 +26,13 @@
    :subname     config/output-db-path
    :user        config/psql-user
    :password    config/psql-pass})
+
+(defn parse-html-fragment
+  "Assumes the text is always part of the document body"
+  [html-fragment]
+  (let [jsoup-doc  (. Jsoup parseBodyFragment html-fragment)]
+    (.text
+      (.body jsoup-doc))))
 
 (defentity entitytest (database psqldb) (entity-fields :k :v))
 
@@ -54,12 +61,7 @@
   [id-list]
   (into {} (map #(vector (:ID %) (doc-content %)) (docs-by-id id-list))))
 
-(defn parse-html-fragment
-  "Assumes the text is always part of the document body"
-  [html-fragment]
-  (let [jsoup-doc  (. Jsoup parseBodyFragment html-fragment)]
-    (.text
-      (.body jsoup-doc))))
+
 
 
 
