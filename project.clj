@@ -16,7 +16,8 @@
                  [org.postgresql/postgresql "9.2-1002-jdbc4"]
                  [org.clojure/math.combinatorics "0.1.3"]
                  [korma "0.4.3"]
-                 [com.taoensso/nippy "2.12.1"]]
+                 [com.taoensso/nippy "2.12.1"]
+                 [clj-time "0.12.0"]]
   :main ^:skip-aot GraphNamedThings.core
   :target-path "target/%s"
   :jvm-opts ["-Xms2g"]

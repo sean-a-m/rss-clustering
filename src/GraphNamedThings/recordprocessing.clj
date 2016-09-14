@@ -1,5 +1,5 @@
 (ns GraphNamedThings.recordprocessing
-  (require [GraphNamedThings.inputs :as inputs]
+  (:require [GraphNamedThings.inputs :as inputs]
            [GraphNamedThings.dbio :as diskio]
            [GraphNamedThings.document :as document]
            [clojure.set :as cset]
@@ -26,12 +26,12 @@
 (defn id-mapping
   "Get ID from a document from the database"
   [data-item]
-  (:ID data-item))
+  (:id data-item))
 
 (defn title-mapping
   "Get title from a document in the database"
   [data-item]
-  (:TITLE data-item))
+  (:title data-item))
 
 (defn content-mapping
   "Get text content from a document in the database"
@@ -42,12 +42,12 @@
   "Takes set of entity records and individual document item and returns the entity records corresponding to that document"
   [entity-records data-item]
   (filter #(every? (partial not= (:ner-tag %)) excluded-tags)
-          (get entity-records (:ID data-item))))
+          (get entity-records (:id data-item))))
 
 (defn create-entity-records
   "Return the list of entity records from a list of document database records.  Requires NLP pipeline object for processing new document records"
   [pipe data]
-  (let [document-ids (map :ID data)
+  (let [document-ids (map :id data)
         existing-entity-records (diskio/select-id-list document-ids)
         existing-rec-ids (into #{} (map :k existing-entity-records))
         pending-rec-ids (cset/difference (into #{} document-ids) existing-rec-ids)
@@ -63,8 +63,15 @@
           entity-mapping (partial entity-record-mapping entity-records)]
       (map (partial document/create-document-record id-mapping title-mapping content-mapping entity-mapping) documents)))
 
-(defn create-document-records-batched
+(defn create-document-records-batched-by-id
   "Create a set of document records given a set of document ids corresponding to database record, an NLP pipleine object, and the size of the document batches to process"
   [nlp-pipe batch-size doc-ids]
   (let [id-batches (partition-all batch-size doc-ids)]
     (mapcat #(create-document-records nlp-pipe (diskio/docs-by-id %)) id-batches)))
+
+(defn create-document-records-batched
+  "Create a set of document records given a set of document ids corresponding to database record, an NLP pipleine object, and the size of the document batches to process"
+  [nlp-pipe batch-size docs]
+  (let [doc-batches (partition-all batch-size docs)]
+    (mapcat (partial create-document-records nlp-pipe) doc-batches)))
+
