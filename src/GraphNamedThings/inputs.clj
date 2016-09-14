@@ -1,5 +1,5 @@
 (ns GraphNamedThings.inputs
-  (require [GraphNamedThings.util :as util]
+  (:require [GraphNamedThings.util :as util]
            [GraphNamedThings.nlputil :as nlputil]
            [GraphNamedThings.corenlpdefs :as nlpdefs])
   (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]

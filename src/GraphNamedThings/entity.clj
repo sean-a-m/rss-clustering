@@ -1,5 +1,5 @@
 (ns GraphNamedThings.entity
-  (require [GraphNamedThings.inputs :as inputs]
+  (:require [GraphNamedThings.inputs :as inputs]
            [GraphNamedThings.util :as util]
            [GraphNamedThings.nlputil :as nlputil]
            [GraphNamedThings.corenlpdefs :as nlpdefs]

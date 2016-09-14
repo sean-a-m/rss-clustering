@@ -1,6 +1,5 @@
 (ns GraphNamedThings.util
-  (require [clojure.zip :as zip])
-  (require digest))
+  (:require digest))
 
 (defn tails
   [xs]

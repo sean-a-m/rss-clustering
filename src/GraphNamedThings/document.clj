@@ -1,5 +1,5 @@
 (ns GraphNamedThings.document
-  (require [GraphNamedThings.entity :as entity]
+  (:require [GraphNamedThings.entity :as entity]
            [loom.graph :as graph]
            [clojure.math.combinatorics :as combo]))
 
@@ -26,14 +26,13 @@
                 entity-record-map) data))
 
 (defn get-entities
-  "Get real entities from a list of entities"
+  "Map a list of entities to entity IDs"
   [ent-coref-map entities]
   (map (partial entity/get-entity-id ent-coref-map) entities))
 
 (defn item-entry
   [doc-rec entity]
   [entity (:id doc-rec)])
-
 (defn ent-doc-set
   "Returns the set of all entity-document relations for one document"
   [ent-coref-map doc-rec]
