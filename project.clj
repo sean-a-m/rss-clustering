@@ -17,10 +17,15 @@
                  [org.clojure/math.combinatorics "0.1.3"]
                  [korma "0.4.3"]
                  [com.taoensso/nippy "2.12.1"]
-                 [clj-time "0.12.0"]]
+                 [clj-time "0.12.0"]
+                 [http-kit "2.1.18"]
+                 [org.clojure/data.json "0.2.6"]
+                 [clj-http "2.3.0"]
+                 [compojure "1.5.1"]
+                 [javax.servlet/javax.servlet-api "3.1.0"]]
   :main ^:skip-aot GraphNamedThings.core
   :target-path "target/%s"
-  :jvm-opts ["-Xms2g"]
+  :jvm-opts ["-Xmx2g"]
   :global-vars {*warn-on-reflection* true
                 *unchecked-math* true
                 *assert* false}

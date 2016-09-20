@@ -10,7 +10,7 @@
            [korma.db :refer :all]
            [korma.core :refer :all]
            [GraphNamedThings.config :as config])
-  (:import [org.jsoup.Jsoup]))
+  (:import org.jsoup.Jsoup))
 
 ;defines one group of related document, where group-id can be an arbitrary id and doc-ids is a collection of document ids
 (defrecord doccluster [group-id doc-ids])
@@ -133,17 +133,15 @@
 (defn write-clusters
   [clusters start-date end-date]
   "Write the resulting set of clusters to the database"
-  (let [id (:id (write-new-cluster-entry start-date end-date))]
-    (doall
-      id  ;force evaluation since insert statement below depends on having ID
-      (map
-        #(insert docrelations (values (create-entries-from-cluster id %))) clusters))))
+  (let [id (:id (write-new-cluster-entry start-date end-date))
+        cluster-entries (mapcat (partial create-entries-from-cluster id) clusters)]
+      (insert docrelations (values (doall cluster-entries)))))
 
-(defn- group-to-cluster-entry
+(defn group-to-cluster-entry
   [group]
   (->doccluster
     (key group)
-    (map :group_id (val group))))
+    (map :doc_id (val group))))
 
 (defn read-doc-cluster
   "Read db entries into doc-cluster record"
