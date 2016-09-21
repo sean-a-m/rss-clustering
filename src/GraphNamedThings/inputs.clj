@@ -1,7 +1,8 @@
 (ns GraphNamedThings.inputs
   (:require [GraphNamedThings.util :as util]
            [GraphNamedThings.nlputil :as nlputil]
-           [GraphNamedThings.corenlpdefs :as nlpdefs])
+           [GraphNamedThings.corenlpdefs :as nlpdefs]
+            [GraphNamedThings.config :as config])
   (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]
            [edu.stanford.nlp.ling CoreAnnotations$SentencesAnnotation CoreAnnotations$TokensAnnotation CoreAnnotations$PartOfSpeechAnnotation CoreAnnotations$TextAnnotation CoreAnnotations$CharacterOffsetBeginAnnotation CoreAnnotations$CharacterOffsetEndAnnotation]
            [edu.stanford.nlp.hcoref CorefCoreAnnotations$CorefChainAnnotation]))
@@ -97,4 +98,6 @@
   (let [annotations (nlputil/text-list-to-annotations doc-text)]
     (do
       (. pipe annotate annotations)
-      (map get-document-entities annotations))))
+      (let [annotations-shortened (nlputil/text-list-to-annotations
+                                    (map #(take config/max-sentences (nlpdefs/get-sentences %)) annotations))]
+        (map get-document-entities annotations-shortened)))))

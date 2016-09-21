@@ -1,7 +1,9 @@
 (ns GraphNamedThings.document
   (:require [GraphNamedThings.entity :as entity]
-           [loom.graph :as graph]
-           [clojure.math.combinatorics :as combo]))
+            [loom.graph :as graph]
+            [clojure.set :as cset]
+            [clojure.math.combinatorics :as combo])
+  (:import (javax.sound.midi MidiMessage)))
 
 
 (defrecord doc-rec [id title text entities])
@@ -33,6 +35,7 @@
 (defn item-entry
   [doc-rec entity]
   [entity (:id doc-rec)])
+
 (defn ent-doc-set
   "Returns the set of all entity-document relations for one document"
   [ent-coref-map doc-rec]
@@ -44,6 +47,65 @@
   [doc-recs]
   (let [ent-coref-map (entity/get-entity-merge-map {} (flatten (map :entities doc-recs)))]
     (into #{} (mapcat (partial ent-doc-set ent-coref-map) doc-recs))))
+
+(defn set-to-loom-vector
+  [esw]
+  (let [edges (first esw)
+        weight (second esw)]
+    (vector (first edges) (second edges) weight)))
+
+(defn entity-freqs
+  "Map pointing from entity (resolved) to frequency in set of documents"
+  [doc-recs grouped]
+    (zipmap (keys grouped) (map count (vals grouped))))
+
+(defn edges-from-shared-entity [ids freq]
+  (let [combos (combo/combinations ids 2)]
+    (if (< 1 (count ids))
+    ;  (map #(vector (first %) (second %) (/ 1 freq)) combos) ;take the inverse of the frequency to weight towards less common edges
+      (map #(vector (set (list (first %) (second %))) (/ 1 freq)) combos) ;take the inverse of the frequency to weight towards less common edges
+      nil)))
+
+(defn add-like-edges
+  "this takes an argument [#{e1 e2} weight] to sum edges with matching #{e1 e2}'s"
+  [weighted-edges]
+  (for [distinct-edge (distinct (map first weighted-edges))]  ;for each edge with a distinct set of vertices in the set of all edges...
+    (let [edge-set (filter #(= (first %) distinct-edge) weighted-edges) ;select all edges with that vertex
+          edge-sum (reduce + (map second edge-set))]  ;sum the weights (second element in the vector)
+      (vector distinct-edge edge-sum))))
+
+
+
+(defn create-graph-edges
+  [doc-recs]
+  (let [grouped (group-by first (ent-doc-sets doc-recs))
+        ef (entity-freqs doc-recs grouped)
+        shared-entity-sets (zipmap (keys grouped) (map #(map second %) (vals grouped)))]
+    (apply concat (map #(edges-from-shared-entity (val %) (get ef (key %))) shared-entity-sets))))
+
+(defn create-graph-new
+  [graph-edges]
+  (let [wg (graph/weighted-graph)]
+    (reduce graph/add-edges wg graph-edges)))
+
+
+;(defn add-like-edges
+;  "Sum edges with the same nodes in a weighted graph"
+;  [g]
+;  (for [group (:adj g)]
+;    (let [conns (val group)
+;          dstnct-conns (distinct (keys conns))]
+;      dstnct-conns)))
+
+(defn create-document-graph-alt
+  [doc-recs]
+  (->> doc-recs
+       (create-graph-edges)
+       (add-like-edges)
+       (map set-to-loom-vector)
+       (create-graph-new)))
+
+;TODO: Deal with nodes with no connection
 
 (defn nodes-from-set
   "Return all pairs of connected nodes (based on shared entities)"
