@@ -1,6 +1,7 @@
 
 (ns GraphNamedThings.core
-  (:require [GraphNamedThings.server :as server])
+  (:require [GraphNamedThings.server :as server]
+            [GraphNamedThings.processdata :as pc])
   (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]))
 
 
@@ -15,6 +16,8 @@
   (let [props (doto (java.util.Properties.)
                 (.put "annotators" "tokenize, ssplit, pos, lemma, ner, parse, dcoref"))
         nlp-pipe (new StanfordCoreNLP props)]
+    (def processing-thread
+      future (pc/process-things! nlp-pipe 150))
     (server/runserver nlp-pipe)))
 
   ;(http/run-server app {:port 9002}))

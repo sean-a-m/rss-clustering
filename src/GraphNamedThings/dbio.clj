@@ -40,7 +40,7 @@
            (entity-fields :id :title :link :date_entered :content :feed_id))
 
 (defentity entry
-           (database frss-db)
+           (database psqldb)
            (entity-fields :id :title :link :date :content :id_feed))
 
 (defentity processed
@@ -73,12 +73,20 @@
           (where {:id [in id-list]
                   :id_feed [in config/selected-feed-ids]})))
 
+(defn select-newest-unprocessed! [batch-size]
+  "Select the most recent documents that haven't been processed to related entities yet.  "
+  (exec-raw psqldb ["SELECT id, title, link, date, content, id_feed FROM entry WHERE id NOT IN (SELECT k FROM entitytest) AND id_feed IN (3, 4, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 97, 98, 99, 100) ORDER BY date DESC LIMIT ?" [batch-size]] :results))
+
+(defn select-newest-unprocessed!2 [batch-size]
+  (select entry
+          (where (and (not {:id [in (map :k (select entitytest))]})
+                      {:id [in config/selected-feed-ids]}))))
 (defn docs-from-time-range-raw
   [start-time end-time]
   (exec-raw frss-db ["SELECT * FROM entry WHERE date BETWEEN ? AND ?" [start-time end-time]] :results))
 
 (defn docs-from-time-range
-  "Time is epoch in frss table"
+  "Time is epoch in  frss table"
   [start-time end-time]
   (select entry
           (where {:date [between [start-time end-time]]
@@ -134,6 +142,7 @@
   [clusters start-date end-date]
   "Write the resulting set of clusters to the database"
   (let [id (:id (write-new-cluster-entry start-date end-date))
+
         cluster-entries (mapcat (partial create-entries-from-cluster id) clusters)]
       (insert docrelations (values (doall cluster-entries)))))
 
