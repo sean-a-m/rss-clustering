@@ -4,7 +4,6 @@
   (:require [clojure-csv.core :as csv]
            [clojure.java.io :as io]
            [clojure.string :as str]
-           [GraphNamedThings.bad :as bad]
             [clj-time.core :as t]
             [clj-time.coerce :as coerce]
            [korma.db :refer :all]
@@ -36,7 +35,7 @@
    :password    config/psql-pass})
 
 (defentity rss_entries
-           (database ttrss-db)
+           (database psqldb)
            (entity-fields :id :title :link :date_entered :content :feed_id))
 
 (defentity entry
@@ -75,7 +74,7 @@
 
 (defn select-newest-unprocessed! [batch-size]
   "Select the most recent documents that haven't been processed to related entities yet.  "
-  (exec-raw psqldb ["SELECT id, title, link, date, content, id_feed FROM entry WHERE id NOT IN (SELECT k FROM entitytest) AND id_feed IN (3, 4, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 97, 98, 99, 100) ORDER BY date DESC LIMIT ?" [batch-size]] :results))
+  (exec-raw psqldb ["SELECT id, title, link, date, content, id_feed FROM entry WHERE id NOT IN (SELECT k FROM entitytest) AND id_feed IN (3, 4, 7, 9, 13, 14, 15, 16, 17, 18, 72, 79, 86, 97, 98, 99, 100) ORDER BY date DESC LIMIT ?" [batch-size]] :results))
 
 (defn select-newest-unprocessed!2 [batch-size]
   (select entry

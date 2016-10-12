@@ -100,4 +100,5 @@
       (. pipe annotate annotations)
       (let [annotations-shortened (nlputil/text-list-to-annotations
                                     (map #(take config/max-sentences (nlpdefs/get-sentences %)) annotations))]
+	(println doc-text)
         (map get-document-entities annotations-shortened)))))

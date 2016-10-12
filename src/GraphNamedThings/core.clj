@@ -14,10 +14,14 @@
 (defn -main
   [& args]
   (let [props (doto (java.util.Properties.)
-                (.put "annotators" "tokenize, ssplit, pos, lemma, ner, parse, dcoref"))
+                (.put "annotators" "tokenize, ssplit, pos, lemma, ner, parse, dcoref")
+		(.put "threads" 2)
+		(.put "timeout" 30000))
         nlp-pipe (new StanfordCoreNLP props)]
-    (def processing-thread
-      future (pc/process-things! nlp-pipe 150))
+      (future (loop [] 
+	(pc/process-things! nlp-pipe 1)
+        (println "processing finished...")
+	(recur)))
     (server/runserver nlp-pipe)))
 
   ;(http/run-server app {:port 9002}))
