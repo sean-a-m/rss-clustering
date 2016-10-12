@@ -29,7 +29,7 @@
         docs (dbio/docs-from-time-range start-epoch end-epoch)]
     (->> docs
         (processing/create-document-records-batched nlp-pipe config/batch-size)
-        (document/create-document-graph-alt)
+        (document/create-document-graph)
         (louvain/iterate-louvain-modularity)
         (first) ;above should return a data structure that's more clear than a vector, but while it returns a vector, the first element is the list of communities
         (louvain-output-to-clusters))))

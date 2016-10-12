@@ -1,17 +1,9 @@
 ;Utilities for testing.
-
-
 (ns GraphNamedThings.test.testutil
   (:require [GraphNamedThings.util :as util]
             [clojure.core.matrix :as m])
   (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]))
 
-
-(defn write-doc [doc-rec]
-  (spit "test/doc" (prn doc-rec)))
-
-(defn read-doc [file]
-  (read-string (slurp file)))
 
 (def props  (doto (java.util.Properties.)
               (.put "annotators" "tokenize, ssplit, pos, lemma, ner, parse, dcoref")))

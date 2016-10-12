@@ -34,7 +34,7 @@
 
 (def doc-recs (document/create-document-records-split (range 8500 9500) pipeline 100))
 
-(def doc-graph (document/create-document-graph doc-recs))
+(def doc-graph (document/create-document-graph2 doc-recs))
 
 (deftest iterate-louvain-test
          (is (= (:adj (first (iterate-louvain g4)))

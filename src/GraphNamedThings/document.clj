@@ -54,32 +54,31 @@
         weight (second esw)]
     (vector (first edges) (second edges) weight)))
 
-(defn entity-freqs
-  "Map pointing from entity (resolved) to frequency in set of documents"
-  [doc-recs grouped]
-    (zipmap (keys grouped) (map count (vals grouped))))
+(defn- entity-freqs
+  "ent-doc-map is the result of (ent-doc-sets doc-recs)"
+  [ent-doc-map]
+  (frequencies (map first ent-doc-map)))
 
 (defn edges-from-shared-entity [ids freq]
   (let [combos (combo/combinations ids 2)]
     (if (< 1 (count ids))
-    ;  (map #(vector (first %) (second %) (/ 1 freq)) combos) ;take the inverse of the frequency to weight towards less common edges
       (map #(vector (set (list (first %) (second %))) (/ 1 freq)) combos) ;take the inverse of the frequency to weight towards less common edges
       nil)))
 
+(defn- update-edge-sum
+  [m c]
+  (let [[edge weight] c]
+    (update m edge (fnil #(+ weight %) 0))))
+
 (defn add-like-edges
-  "this takes an argument [#{e1 e2} weight] to sum edges with matching #{e1 e2}'s"
   [weighted-edges]
-  (for [distinct-edge (distinct (map first weighted-edges))]  ;for each edge with a distinct set of vertices in the set of all edges...
-    (let [edge-set (filter #(= (first %) distinct-edge) weighted-edges) ;select all edges with that vertex
-          edge-sum (reduce + (map second edge-set))]  ;sum the weights (second element in the vector)
-      (vector distinct-edge edge-sum))))
-
-
+    (reduce update-edge-sum {} weighted-edges))
 
 (defn create-graph-edges
   [doc-recs]
-  (let [grouped (group-by first (ent-doc-sets doc-recs))
-        ef (entity-freqs doc-recs grouped)
+  (let [ent-doc-map (ent-doc-sets doc-recs)
+        grouped (group-by first ent-doc-map)
+        ef (entity-freqs ent-doc-map)
         shared-entity-sets (zipmap (keys grouped) (map #(map second %) (vals grouped)))]
     (apply concat (map #(edges-from-shared-entity (val %) (get ef (key %))) shared-entity-sets))))
 
@@ -88,16 +87,7 @@
   (let [wg (graph/weighted-graph)]
     (reduce graph/add-edges wg graph-edges)))
 
-
-;(defn add-like-edges
-;  "Sum edges with the same nodes in a weighted graph"
-;  [g]
-;  (for [group (:adj g)]
-;    (let [conns (val group)
-;          dstnct-conns (distinct (keys conns))]
-;      dstnct-conns)))
-
-(defn create-document-graph-alt
+(defn create-document-graph
   [doc-recs]
   (->> doc-recs
        (create-graph-edges)
@@ -124,7 +114,7 @@
     (if (seq? maybe-pair)
       (vector (first maybe-pair) (second maybe-pair) weight))))
 
-(defn create-document-graph
+(defn create-document-graph2
   "Create a graph where nodes represent document records and edges represent shared entities"
   [doc-recs]
   (apply graph/weighted-graph
