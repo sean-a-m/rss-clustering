@@ -21,18 +21,20 @@
   [cs]
   (map community-item-to-doc-cluster cs))
 
+(let [cached '()]
 (defn create-document-clusters-between
   "Return set of document clusters from a start and end date as clj-time"
-  [nlp-pipe start end]
+  [nlp-pipe start end & cached]
   (let [start-epoch (coerce/to-epoch start)
         end-epoch (coerce/to-epoch end)
-        docs (dbio/docs-from-time-range start-epoch end-epoch)]
-    (->> docs
-        (processing/create-document-records-batched nlp-pipe config/batch-size)
+        docs (dbio/docs-from-time-range start-epoch end-epoch)
+        cached (dbio/select-best-cluster-set start-epoch end-epoch)]
+    (-> docs
+        (partial processing/create-document-records-batched nlp-pipe config/batch-size)
         (document/create-document-graph)
-        (louvain/iterate-louvain-modularity)
+        (louvain/iterate-louvain-modularity cached)
         (first) ;above should return a data structure that's more clear than a vector, but while it returns a vector, the first element is the list of communities
-        (louvain-output-to-clusters))))
+        (louvain-output-to-clusters)))))
 
 (defn write-and-return-clusters
   "Calculate, write to database, and return document clusters"
@@ -41,6 +43,12 @@
     (do (dbio/write-clusters clusters start end)
         clusters)))
 
+(defn write-and-return-clusters-overlap
+  "Calculate, write to database, and return document clusters"
+  [nlp-pipe start end]
+  (let [clusters (create-document-clusters-between nlp-pipe start end)]
+    (do (dbio/write-clusters clusters start end)
+        clusters)))
 
 (defn get-clusters
   [nlp-pipe start end]
@@ -50,6 +58,12 @@
       (dbio/read-doc-cluster processed-id)))) ;else read from database
 
 
+(defn get-clusters-overlap
+  [nlp-pipe start end]
+  (let [processed-id (dbio/select-best-cluster start end)]
+    (if (nil? processed-id) ;if no id was returned for a preprocessed cluster
+      (write-and-return-clusters nlp-pipe start end)  ;calculate, write to database, and return clusters
+      (dbio/read-doc-cluster processed-id)))) ;else read from database
 
 
 
