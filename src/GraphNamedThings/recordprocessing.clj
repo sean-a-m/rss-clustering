@@ -1,6 +1,7 @@
 (ns GraphNamedThings.recordprocessing
   (:require [GraphNamedThings.inputs :as inputs]
             [GraphNamedThings.dbio :as diskio]
+            [GraphNamedThings.util :as util]
             [GraphNamedThings.document :as document]
             [clojure.set :as cset]
             [taoensso.nippy :as nippy]
@@ -11,6 +12,12 @@
 ;tags that shouldn't be used for classifying documents
 (def excluded-tags ["DATE" "NUMBER" "ORDINAL" "MISC" "MONEY" "DURATION" "TIME" "PERCENT" "SET"])
 
+(defn entityjson
+  "Using the old (k: document-id v: [entity records]) collection, create a list of (k: sha256 hash v: {:doc-id :ner-tag :strings[]}) records to write to databse"
+  [id-entity-list-item]
+  (map #(sorted-map :id (util/sha256-bytes (clojure.string/join (:strings %) (str (key id-entity-list-item))))
+                    :val (json/write-str {:doc-id (key id-entity-list-item) :ner-tag (:ner-tag %) :strings (:strings %)})) (val id-entity-list-item)))
+
 (defn- build-and-write-new-entity-records
   "Create new entity records from a list of ids and write them to a database"
   [ids pipe]
@@ -18,10 +25,14 @@
         entities (inputs/get-entity-lists (vals doc-content) pipe)
         entities-json (map json/write-str entities)
         id-entity-list (zipmap (keys doc-content) entities)
-        id-entity-list-json (map #(sorted-map :id %1 :val %2) (keys doc-content) entities-json)]
+        id-entity-list-json (map #(sorted-map :id %1 :val %2) (keys doc-content) entities-json)
+        entity-string-table (mapcat entityjson id-entity-list)]
+    (println entity-string-table)
     (do
       (insert diskio/entities
               (values id-entity-list-json))
+      (insert diskio/entitystrings
+              (values entity-string-table))
       id-entity-list)))
 
 (defn id-mapping

@@ -55,6 +55,8 @@
 
 (defentity entitytest (database psqldb) (entity-fields :k :v))
 
+(defentity entitystrings (database psqldb) (entity-fields :id :val))
+
 (defentity entities (database psqldb) (entity-fields :id :val))
 
 

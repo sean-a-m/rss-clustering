@@ -1,5 +1,5 @@
 (ns GraphNamedThings.util
-  (:require digest))
+  (:require [digest :as digest]))
 
 (defn tails
   [xs]
@@ -11,6 +11,10 @@
 (defn uuid! []
   "Create a java uuid"
   (str (java.util.UUID/randomUUID)))
+
+(defn sha256-bytes [string]
+  (.getBytes
+    (digest/sha-256 string)))
 
 (defn in?
   "Is an element in a collection?"

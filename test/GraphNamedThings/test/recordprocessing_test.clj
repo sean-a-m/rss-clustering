@@ -1,6 +1,7 @@
 (ns GraphNamedThings.test.entity_test
   (:require [GraphNamedThings.recordprocessing :as rp]
             [GraphNamedThings.test.testdata :refer :all]
+            [GraphNamedThings.dbio :as dbio]
             [clojure.test :refer :all]
             [GraphNamedThings.document :as document]
             [clj-time.core :as t]
@@ -14,4 +15,4 @@
 (def nlp-pipe (new StanfordCoreNLP props))
 (def docs (dbio/docs-from-time-range (coerce/to-epoch (t/date-time 2016 10 1 13)) (coerce/to-epoch (t/date-time 2016 10 2 12))))
 (def s1 (->> docs
-             (processing/create-document-records-batched nlp-pipe 15)))
+             (rp/create-document-records-batched nlp-pipe 15)))
