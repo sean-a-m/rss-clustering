@@ -1,12 +1,42 @@
 (ns GraphNamedThings.louvain
   (:require [loom.graph]
-            [loom.alg]))
+            [loom.alg]
+            [clojure.set :as cset]))
 
 (defn init-community
   "Returns the set of communities where each community contains one graph node"
   [g]
   (apply merge
          (map #(hash-map % (list %)) (:nodeset g))))
+
+(defn- maplistreverse
+  "Reverse a map.  Not good if k repeats"
+  [m]
+  (apply merge
+         (map (fn [k] (zipmap (get m k) (repeat k))) (keys m))))
+
+(defn- assoc-things
+  [m existing]
+  (assoc m (key existing) (val existing)))
+
+(defn- preexisting-comm-assignments 
+  [g & cs]
+  "Given communities cs and the graph g, place any nodes in g not in cs in their own community, and leave   the others in their preexisting communities.  
+  If a node belongs to multiple preexisting communities, leave it in the first one"
+    (loop [comms cs cs' {}]
+      (let [comm-index (maplistreverse (first comms))
+            existing-nodes (select-keys comm-index (:nodeset g))]
+            (reduce assoc-things cs' existing-nodes))
+      (if (seq? (rest cs))
+        (recur (rest cs) cs')
+        cs')))
+
+(defn init-comms-from-preexisting
+  [g & cs]
+  (let [nodes (:nodeset g)
+        preexisting (preexisting-comm-assignments g cs)
+        unassigned (cset/difference (into #{} nodes) (into #{} (keys preexisting)))]
+    (merge preexisting (zipmap unassigned unassigned))))
 
 (defn- maplistreverse
   "Reverse a map.  Not good if k repeats"
@@ -99,11 +129,13 @@
         (vector (persistent! (first cs-node-vector)) (persistent! (second cs-node-vector)))
         (recur (max-dQ g m cs-node-vector (first nodes)) (rest nodes))))))
 
+(let [pre-cs '()]
 ;TODO: verify that maximum iteration limit is actually neccessary
 (defn iterate-louvain-modularity
   "Iterate until community vector no longer changes or max-iteration limit is reached"
-  [g]
-  (let [cs (community-precalc (init-community g) g)
+  [g & pre-cs]
+  (let [;cs (community-precalc (init-community g) g)
+        cs (community-precalc (preexisting-comm-assignments g pre-cs) g)
         node-index (maplistreverse (init-community g))
         m (total-link-weight g)
         f-max-modularity (partial max-graph-modularity g m)
@@ -114,6 +146,5 @@
         (if (and (not= (first new-vector) (first csnodevector))
                  (< limit iterations))
           (recur new-vector (inc iterations))
-          new-vector)))))
-
+          new-vector))))))
 

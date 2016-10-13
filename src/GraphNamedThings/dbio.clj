@@ -113,6 +113,15 @@
                         (<= sql-end :enddate))))))
 
 
+(defn select-overlapping-clusters
+  "Select all clusters that overlap with start-end interval"
+  [start-date end-date]
+  (let [sql-start (coerce/to-sql-time start-date)
+        sql-end (coerce/to-sql-time end-date)]
+    (select processed
+            (where (or (<= sql-start :enddate)
+                        (>= sql-end :startdate))))))
+
 (defn select-best-cluster
   "Given start and end timestamps, select the best document group.  Right now the best one is whichever is over the smallest invterval"
   [start-date end-date]
@@ -122,6 +131,14 @@
                        (t/interval (coerce/from-sql-time (:startdate %)) (coerce/from-sql-time (:enddate %))))
                    candidates)))))
 
+
+(defn select-best-cluster-set
+  "Incomplete, intended to select the set of overlapping clusters that would give the most accurate final result"
+  [start-date end-date]
+  (let [candidates (select-overlapping-clusters start-date end-date)
+        processed-ids (map :id candidates)]
+    (select docrelations
+      (where {:processed_id [in processed-ids]}))))
 
 (defn write-new-cluster-entry
   "Write entry for this document cluster into the index, with a starting time stamp and postgres interval, and return the id"
