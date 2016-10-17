@@ -21,20 +21,19 @@
   [cs]
   (map community-item-to-doc-cluster cs))
 
-(let [cached '()]
 (defn create-document-clusters-between
   "Return set of document clusters from a start and end date as clj-time"
-  [nlp-pipe start end & cached]
+  [nlp-pipe start end]
   (let [start-epoch (coerce/to-epoch start)
         end-epoch (coerce/to-epoch end)
         docs (dbio/docs-from-time-range start-epoch end-epoch)
-        cached (dbio/select-best-cluster-set start-epoch end-epoch)]
-    (-> docs
-        (partial processing/create-document-records-batched nlp-pipe config/batch-size)
+        cached (dbio/select-best-cluster-set start end)]
+    (->> docs
+        (processing/create-document-records-batched nlp-pipe config/batch-size)
         (document/create-document-graph)
         (louvain/iterate-louvain-modularity cached)
         (first) ;above should return a data structure that's more clear than a vector, but while it returns a vector, the first element is the list of communities
-        (louvain-output-to-clusters)))))
+        (louvain-output-to-clusters))))
 
 (defn write-and-return-clusters
   "Calculate, write to database, and return document clusters"

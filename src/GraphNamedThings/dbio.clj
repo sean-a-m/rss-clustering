@@ -119,8 +119,8 @@
   (let [sql-start (coerce/to-sql-time start-date)
         sql-end (coerce/to-sql-time end-date)]
     (select processed
-            (where (or (<= sql-start :enddate)
-                        (>= sql-end :startdate))))))
+            (where (or {:enddate [>= sql-start]
+                        :startdate [<= sql-end]})))))
 
 (defn select-best-cluster
   "Given start and end timestamps, select the best document group.  Right now the best one is whichever is over the smallest invterval"
@@ -131,14 +131,20 @@
                        (t/interval (coerce/from-sql-time (:startdate %)) (coerce/from-sql-time (:enddate %))))
                    candidates)))))
 
+(defn- assoc-things
+  [m entry]
+  (update-in m (list (:group_id entry)) (fnil #(conj % (:doc_id entry)) '())))  ;I'm using update-in so I don't have to add a prefix to all the korma/updates.....
 
 (defn select-best-cluster-set
-  "Incomplete, intended to select the set of overlapping clusters that would give the most accurate final result"
+  "Returns a list of existing community id to document id mappings"
   [start-date end-date]
   (let [candidates (select-overlapping-clusters start-date end-date)
         processed-ids (map :id candidates)]
-    (select docrelations
-      (where {:processed_id [in processed-ids]}))))
+    (let [results (select docrelations (where {:processed_id [in processed-ids]}))]
+      ;(reduce assoc-things {} results))))
+      (map #(select-keys % '(:group_id :doc_id)) results))))
+
+
 
 (defn write-new-cluster-entry
   "Write entry for this document cluster into the index, with a starting time stamp and postgres interval, and return the id"

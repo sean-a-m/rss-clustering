@@ -19,6 +19,7 @@
                  [com.taoensso/nippy "2.12.1"]
                  [clj-time "0.12.0"]
                  [http-kit "2.1.18"]
+                 [criterium "0.4.4"]
                  [org.clojure/data.json "0.2.6"]
                  [clj-http "2.3.0"]
                  [compojure "1.5.1"]
