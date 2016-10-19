@@ -17,4 +17,7 @@
   [elm coll]
   (some #{elm} (into () coll)))
 
-
+(defn select-keys-trans
+  "A way to select-key from a transient map, probably not a good idea for some reason"
+  [m ks]
+  (apply merge (map #(hash-map % (get m %)) ks)))

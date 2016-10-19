@@ -14,7 +14,7 @@
   [c]
   (doccluster.
     (key c)
-    (:components (val c))))
+    (val c)))
 
 (defn louvain-output-to-clusters
   "Takes a community set from louvain iteration method and returns a collection of doc-cluster records"
@@ -31,7 +31,7 @@
     (->> docs
         (processing/create-document-records-batched nlp-pipe config/batch-size)
         (document/create-document-graph)
-        (louvain/iterate-louvain-modularity cached)
+        (louvain/iterate-louvain-modularity '())
         (first) ;above should return a data structure that's more clear than a vector, but while it returns a vector, the first element is the list of communities
         (louvain-output-to-clusters))))
 
@@ -55,7 +55,6 @@
     (if (nil? processed-id) ;if no id was returned for preprocessed clusters
       (write-and-return-clusters nlp-pipe start end)  ;calculate, write to database, and return clusters
       (dbio/read-doc-cluster processed-id)))) ;else read from database
-
 
 (defn get-clusters-overlap
   [nlp-pipe start end]
