@@ -1,11 +1,12 @@
 (ns GraphNamedThings.recordprocessing
   (:require [GraphNamedThings.inputs :as inputs]
-           [GraphNamedThings.dbio :as diskio]
-           [GraphNamedThings.document :as document]
-           [clojure.set :as cset]
-           [taoensso.nippy :as nippy]
-           [korma.db :refer :all]
-           [korma.core :refer :all]))
+            [GraphNamedThings.dbio :as diskio]
+            [GraphNamedThings.document :as document]
+            [clojure.set :as cset]
+            [taoensso.nippy :as nippy]
+            [clojure.data.json :as json]
+            [korma.db :refer :all]
+            [korma.core :refer :all]))
 
 ;tags that shouldn't be used for classifying documents
 (def excluded-tags ["DATE" "NUMBER" "ORDINAL" "MISC" "MONEY" "DURATION" "TIME" "PERCENT" "SET"])
@@ -15,12 +16,12 @@
   [ids pipe]
   (let [doc-content (diskio/doc-content-by-id ids)
         entities (inputs/get-entity-lists (vals doc-content) pipe)
-        entities-serialized (map nippy/freeze entities)
+        entities-json (map json/write-str entities)
         id-entity-list (zipmap (keys doc-content) entities)
-        id-entity-list-serialized (map #(sorted-map :k %1 :v %2) (keys doc-content) entities-serialized)]
+        id-entity-list-json (map #(sorted-map :id %1 :val %2) (keys doc-content) entities-json)]
     (do
-      (insert diskio/entitytest
-              (values id-entity-list-serialized))
+      (insert diskio/entities
+              (values id-entity-list-json))
       id-entity-list)))
 
 (defn id-mapping
@@ -49,9 +50,9 @@
   [pipe data]
   (let [document-ids (map :id data)
         existing-entity-records (diskio/select-id-list document-ids)
-        existing-rec-ids (into #{} (map :k existing-entity-records))
+        existing-rec-ids (into #{} (map :id existing-entity-records))
         pending-rec-ids (cset/difference (into #{} document-ids) existing-rec-ids)
-        kv-recs-existing (zipmap (map :k existing-entity-records) (map #(nippy/thaw (:v %)) existing-entity-records))  ;records that are already in the database
+        kv-recs-existing (zipmap (map :id existing-entity-records) (map #(json/read-str (str (:val %)) :key-fn keyword) existing-entity-records))  ;records that are already in the database
         kv-recs-pending (if (seq pending-rec-ids)                                             ;records that still need to be built
                           (build-and-write-new-entity-records pending-rec-ids pipe)
                           nil)]

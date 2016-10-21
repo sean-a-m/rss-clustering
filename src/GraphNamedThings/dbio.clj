@@ -2,13 +2,15 @@
 
 (ns GraphNamedThings.dbio
   (:require [clojure-csv.core :as csv]
-           [clojure.java.io :as io]
-           [clojure.string :as str]
+            [clojure.java.io :as io]
+            [clojure.string :as str]
             [clj-time.core :as t]
             [clj-time.coerce :as coerce]
-           [korma.db :refer :all]
-           [korma.core :refer :all]
-           [GraphNamedThings.config :as config])
+            [korma.db :refer :all]
+            [clojure.data.json :as json]
+            [taoensso.nippy :as nippy]
+            [korma.core :refer :all]
+            [GraphNamedThings.config :as config])
   (:import org.jsoup.Jsoup))
 
 ;defines one group of related document, where group-id can be an arbitrary id and doc-ids is a collection of document ids
@@ -32,7 +34,8 @@
    :subprotocol "postgresql"
    :subname     config/output-db-path
    :user        config/psql-user
-   :password    config/psql-pass})
+   :password    config/psql-pass
+   :stringtype "unspecified"})
 
 (defentity rss_entries
            (database psqldb)
@@ -50,6 +53,12 @@
            (database psqldb)
            (entity-fields :processed_id :group_id :doc_id))
 
+(defentity entitytest (database psqldb) (entity-fields :k :v))
+
+(defentity entities (database psqldb) (entity-fields :id :val))
+
+
+
 (defn parse-html-fragment
   "Assumes the text is always part of the document body"
   [html-fragment]
@@ -57,13 +66,18 @@
     (.text
       (.body jsoup-doc))))
 
-(defentity entitytest (database psqldb) (entity-fields :k :v))
-
-(defn select-id-list
+(defn select-id-list-old
   "Select processed documents by ID"
   [id-list]
   (select entitytest
           (where {:k [in id-list]})))
+
+(defn select-id-list
+  "Select processed documents by ID"
+  [id-list]
+  (select entities
+          (where {:id [in id-list]})))
+
 
 (defn docs-by-id
   "Select input documents by ID"
@@ -74,12 +88,18 @@
 
 (defn select-newest-unprocessed! [batch-size]
   "Select the most recent documents that haven't been processed to related entities yet.  "
+  (exec-raw psqldb ["SELECT id, title, link, date, content, id_feed FROM entry WHERE id NOT IN (SELECT k FROM entities) AND id_feed IN (3, 4, 7, 9, 13, 14, 15, 16, 17, 18, 72, 79, 86, 97, 98, 99, 100) ORDER BY date DESC LIMIT ?" [batch-size]] :results))
+
+(defn select-newest-unprocessed!-old [batch-size]
+  "Select the most recent documents that haven't been processed to related entities yet.  "
   (exec-raw psqldb ["SELECT id, title, link, date, content, id_feed FROM entry WHERE id NOT IN (SELECT k FROM entitytest) AND id_feed IN (3, 4, 7, 9, 13, 14, 15, 16, 17, 18, 72, 79, 86, 97, 98, 99, 100) ORDER BY date DESC LIMIT ?" [batch-size]] :results))
+
 
 (defn select-newest-unprocessed!2 [batch-size]
   (select entry
           (where (and (not {:id [in (map :k (select entitytest))]})
                       {:id [in config/selected-feed-ids]}))))
+
 (defn docs-from-time-range-raw
   [start-time end-time]
   (exec-raw frss-db ["SELECT * FROM entry WHERE date BETWEEN ? AND ?" [start-time end-time]] :results))
@@ -112,6 +132,11 @@
             (where (and (>= sql-start :startdate)
                         (<= sql-end :enddate))))))
 
+(defn move-serialized-to-json! []
+  (let [selectedentities (select entitytest)]
+    (doall
+    (map #(insert entities
+                  (values [{:id (:k %) :val (json/write-str (nippy/thaw (:v %)))}])) selectedentities))))
 
 (defn select-overlapping-clusters
   "Select all clusters that overlap with start-end interval"
@@ -181,5 +206,6 @@
                               (where (= :processed_id id)))
         doc-relations-grouped (group-by :group_id doc-relations)]
     (map group-to-cluster-entry doc-relations-grouped)))
+
 
 
