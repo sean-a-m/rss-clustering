@@ -80,6 +80,16 @@
   (select entities
           (where {:id [in id-list]})))
 
+(defn select-entities-by-doc-id
+  [id-list]
+  (select entitystrings
+          (where {(raw "val->>'doc-id'") [in id-list]})))
+
+(defn select-by-strings
+  [string-list]
+  (let [quoted-list (map #(clojure.string/join (list "'" % "'")) string-list)
+        array-str (clojure.string/join "," quoted-list)]
+    (exec-raw psqldb [(clojure.string/join (list "SELECT * FROM entitystrings WHERE (val->'strings')::jsonb #&# array[" array-str "]"))] :results)))
 
 (defn docs-by-id
   "Select input documents by ID"

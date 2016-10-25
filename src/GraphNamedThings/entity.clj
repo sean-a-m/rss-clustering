@@ -14,15 +14,6 @@
   [ent-rec]
   (set
     (:strings ent-rec)))
- ; (set
- ;   (mapcat #(str/split % #"\s") (:strings ent-rec))))
-
-(defn ent-similarity
-  "Return a list of entity keys and similarity values for a list ent-list compared against an entity record ent-rec"
-  [ent-rec ent-list]
-    (map #(vector % (nlputil/longest-matching (string-set ent-rec)
-                                              (string-set %)))
-         ent-list))
 
 (defn longest-matching
   "Score based on the length of the longest shared word between the two records.
@@ -60,26 +51,10 @@
   (let [f (fn [x] (conj x ent-rec))]
     (reduce #(update %1 %2 f) ent-index (string-set ent-rec))))
 
-(defn index-word-entries2
-  "Add all words in an entity record to an index pointing from word to list of entity records containing that word"
-  [ent-rec ent-index]
-  (let [string-keywords (map digest/sha-256 (string-set ent-rec))
-        f (fn [x] (conj x ent-rec))]
-    (reduce #(update %1 %2 f) ent-index string-keywords)))
-
 (defn index-entities
   "Add all words in a set of entities (from a document, for example) to a hashmap where the set of words contained in all entities is the set of keys and the set of entities containing those words are the values"
   [ent-recs ent-index]
   (reduce #(index-word-entries %2 %1) ent-index ent-recs))
-
-(defn index-entities2
-  "Add all words in a set of entities (from a document, for example) to a hashmap where the set of words contained in all entities is the set of keys and the set of entities containing those words are the values"
-  [ent-recs ent-index]
-  (reduce #(index-word-entries2 %2 %1) ent-index ent-recs))
-
-(defn ent-index-to-db
-  [index]
-  (3))
 
 (defn get-coref-candidates
   "Return all possible coreference candidates"
@@ -98,7 +73,6 @@
     (assoc ent-map
       (first ent-recs)
       (let [bestc (best-coref (first ent-recs) candidates longest-matching)]
-        ;(println (:strings (first ent-recs)) " : " (:strings bestc))
         bestc))))
 
 (defn get-entity-merge-map
@@ -107,7 +81,6 @@
   (let [ent-index (index-entities ent-recs {})]
     (reduce (partial merge-entity ent-index) ent-map (util/tails ent-recs))))
 
-;TODO: record sounds like record
 (defn get-entity-id
   "Iterate through the index of entities until hitting the one where the key and value are identical (doesn't point to
   any other entity"
