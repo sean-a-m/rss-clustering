@@ -15,7 +15,8 @@
 (defn entityjson
   "Using the old (k: document-id v: [entity records]) collection, create a list of (k: sha256 hash v: {:doc-id :ner-tag :strings[]}) records to write to databse"
   [id-entity-list-item]
-  (map #(sorted-map :id (util/sha256-bytes (clojure.string/join (:strings %) (str (key id-entity-list-item))))
+  ;(println (clojure.string/join (:strings %) (str (key id-entity-list-item))))
+  (map #(sorted-map :id (util/sha256-bytes (clojure.string/join (flatten (list (:strings %) (str (rand-int 90000)) (str (key id-entity-list-item))))))
                     :val (json/write-str {:doc-id (key id-entity-list-item) :ner-tag (:ner-tag %) :strings (:strings %)})) (val id-entity-list-item)))
 
 (defn- build-and-write-new-entity-records
@@ -27,12 +28,13 @@
         id-entity-list (zipmap (keys doc-content) entities)
         id-entity-list-json (map #(sorted-map :id %1 :val %2) (keys doc-content) entities-json)
         entity-string-table (mapcat entityjson id-entity-list)]
-    (println entity-string-table)
     (do
-      (insert diskio/entities
-              (values id-entity-list-json))
-      (insert diskio/entitystrings
-              (values entity-string-table))
+      (println entity-string-table)
+      (if (not-empty entity-string-table)
+ ;     (insert diskio/entities
+ ;             (values id-entity-list-json))
+        (insert diskio/entitystrings
+                (values entity-string-table)))
       id-entity-list)))
 
 (defn id-mapping
@@ -56,7 +58,16 @@
   (filter #(every? (partial not= (:ner-tag %)) excluded-tags)
           (get entity-records (:id data-item))))
 
-(defn create-entity-records
+(defn return-existing-entity-records
+  [id-list]
+  (->> id-list
+       (map str)
+       (diskio/select-entities-by-doc-id)
+       (map #(json/read-str (str (:val %)) :key-fn keyword))
+       (group-by :doc-id)))
+
+
+(defn create-entity-records-old
   "Return the list of entity records from a list of document database records.  Requires NLP pipeline object for processing new document records"
   [pipe data]
   (let [document-ids (map :id data)
@@ -64,6 +75,20 @@
         existing-rec-ids (into #{} (map :id existing-entity-records))
         pending-rec-ids (cset/difference (into #{} document-ids) existing-rec-ids)
         kv-recs-existing (zipmap (map :id existing-entity-records) (map #(json/read-str (str (:val %)) :key-fn keyword) existing-entity-records))  ;records that are already in the database
+        kv-recs-pending (if (seq pending-rec-ids)                                             ;records that still need to be built
+                          (build-and-write-new-entity-records pending-rec-ids pipe)
+                          nil)]
+    (merge kv-recs-existing kv-recs-pending)))
+
+(defn create-entity-records
+  "Return the list of entity records from a list of document database records.  Requires NLP pipeline object for processing new document records"
+  [pipe data]
+  (let [document-ids (map :id data)
+        existing-entity-records (return-existing-entity-records document-ids)
+        existing-rec-ids (into #{} (keys existing-entity-records))
+        pending-rec-ids (
+                          cset/difference (into #{} document-ids) existing-rec-ids)
+        kv-recs-existing existing-entity-records  ;records that are already in the database
         kv-recs-pending (if (seq pending-rec-ids)                                             ;records that still need to be built
                           (build-and-write-new-entity-records pending-rec-ids pipe)
                           nil)]
