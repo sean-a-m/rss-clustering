@@ -10,14 +10,17 @@
             [korma.core :refer :all]))
 
 ;tags that shouldn't be used for classifying documents
-(def excluded-tags ["DATE" "NUMBER" "ORDINAL" "MISC" "MONEY" "DURATION" "TIME" "PERCENT" "SET"])
+(def excluded-tags ["DATE" "NUMBER" "ORDINAL" "MISC" "MONEY" "DURATION" "TIME" "PERCENT" "SET" "NULL"])
 
 (defn entityjson
   "Using the old (k: document-id v: [entity records]) collection, create a list of (k: sha256 hash v: {:doc-id :ner-tag :strings[]}) records to write to databse"
   [id-entity-list-item]
-  ;(println (clojure.string/join (:strings %) (str (key id-entity-list-item))))
-  (map #(sorted-map :id (util/sha256-bytes (clojure.string/join (flatten (list (:strings %) (str (rand-int 90000)) (str (key id-entity-list-item))))))
-                    :val (json/write-str {:doc-id (key id-entity-list-item) :ner-tag (:ner-tag %) :strings (:strings %)})) (val id-entity-list-item)))
+  (if (not-empty (val id-entity-list-item))
+    (map #(sorted-map :id (util/sha256-bytes (clojure.string/join (flatten (list (:strings %) (str (rand-int 90000)) (str (key id-entity-list-item))))))
+                       :val (json/write-str {:doc-id (key id-entity-list-item) :ner-tag (:ner-tag %) :strings (:strings %)})) (val id-entity-list-item))
+    (map #(sorted-map :id (util/sha256-bytes (clojure.string/join (flatten (list % (str (rand-int 90000)) (str (key id-entity-list-item))))))
+                      :val (json/write-str {:doc-id (key id-entity-list-item) :ner-tag "NULL" :strings %})) (list ""))))
+
 
 (defn- build-and-write-new-entity-records
   "Create new entity records from a list of ids and write them to a database"
