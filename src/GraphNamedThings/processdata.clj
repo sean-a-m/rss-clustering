@@ -7,11 +7,12 @@
             [GraphNamedThings.config :as config]))
 
 (defn process-next-document-set! [nlp-pipe batch-size]
-  (let [doc-set (dbio/select-newest-unprocessed! batch-size)]
-    (println "Processing " (count doc-set) " documents")
+  (let [doc-ids (map :id (dbio/select-newest-unprocessed-newest batch-size))]
+    (println "Processing " (count doc-ids) " documents")
     (println "Doc set is: ")
-    (println doc-set)
-    (processing/create-document-records-batched nlp-pipe config/batch-size doc-set)))
+    (println doc-ids)
+    (processing/build-and-write-new-entity-records doc-ids nlp-pipe)))
+   ; (processing/create-document-records-batched nlp-pipe config/batch-size doc-set)))
 
 (defn process-things! [nlp-pipe batch-size]
   	(let [processed (process-next-document-set! nlp-pipe batch-size)]

@@ -35,6 +35,21 @@
         (first) ;above should return a data structure that's more clear than a vector, but while it returns a vector, the first element is the list of communities
         (louvain-output-to-clusters))))
 
+(defn create-document-clusters-between-new
+  "Return set of document clusters from a start and end date as clj-time"
+  [start end]
+  (let [start-epoch (coerce/to-epoch start)
+        end-epoch (coerce/to-epoch end)
+        docs (dbio/processed-docs-from-time-range start-epoch end-epoch)
+        ids (map :id docs)
+        cached (dbio/select-best-cluster-set start end)]
+    (->> ids
+         (processing/create-document-records-newish)
+         (document/create-document-graph)
+         (louvain/iterate-louvain-modularity '())
+         (first) ;above should return a data structure that's more clear than a vector, but while it returns a vector, the first element is the list of communities
+         (louvain-output-to-clusters))))
+
 (defn write-and-return-clusters
   "Calculate, write to database, and return document clusters"
   [nlp-pipe start end]

@@ -51,6 +51,8 @@
   [texts]
   (map #(new Annotation %) texts))
 
-
+(defn text-list-to-annotation
+  [text]
+  (new Annotation text))
 
 

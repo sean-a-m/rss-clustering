@@ -23,7 +23,8 @@
                  [org.clojure/data.json "0.2.6"]
                  [clj-http "2.3.0"]
                  [compojure "1.5.1"]
-                 [javax.servlet/javax.servlet-api "3.1.0"]]
+                 [javax.servlet/javax.servlet-api "3.1.0"]
+                 [danlentz/clj-uuid "0.1.6"]]
   :main ^:skip-aot GraphNamedThings.core
   :target-path "target/%s"
   :jvm-opts ["-Xmx2g"]

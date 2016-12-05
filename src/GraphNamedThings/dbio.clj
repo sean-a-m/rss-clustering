@@ -10,6 +10,7 @@
             [clojure.data.json :as json]
             [taoensso.nippy :as nippy]
             [korma.core :refer :all]
+            [clj-uuid :as uuid]
             [GraphNamedThings.config :as config])
   (:import org.jsoup.Jsoup))
 
@@ -35,7 +36,12 @@
    :subname     config/output-db-path
    :user        config/psql-user
    :password    config/psql-pass
-   :stringtype "unspecified"})
+   :stringtype "unspecified"
+   })
+
+(defdb mydb psqldb)
+
+;(declare namedentities strings processlog)
 
 (defentity rss_entries
            (database psqldb)
@@ -45,9 +51,33 @@
            (database psqldb)
            (entity-fields :id :title :link :date :content :id_feed))
 
+(defentity entry-ids
+           (database psqldb)
+           (entity-fields :id)
+           (table :entry))
+
 (defentity processed
            (database psqldb)
            (entity-fields :id :startdate :enddate))
+
+(defentity processlog
+           (database mydb)
+           (entity-fields :id :success :ver))
+
+(defentity processlog-ids
+           (database mydb)
+           (table :processlog)
+           (entity-fields :id))
+
+(defentity namedentities
+           (database mydb)
+ ;          (has-many strings)
+           (entity-fields :id :tag :docid))
+
+(defentity strings
+           (database mydb)
+           (belongs-to namedentities)
+           (entity-fields :id :entstring :count))
 
 (defentity docrelations
            (database psqldb)
@@ -98,6 +128,14 @@
           (where {:id [in id-list]
                   :id_feed [in config/selected-feed-ids]})))
 
+(defn select-newest-unprocessed-newest [batch-size]
+  (select entry-ids
+      (where (and (not (in :id (subselect processlog-ids)))
+              (in :id_feed config/selected-feed-ids)))
+                 ; {:id [in (list 3 4 7)]}))
+          (limit batch-size)
+          (order :id :DESC)))
+
 (defn select-newest-unprocessed! [batch-size]
   "Select the most recent documents that haven't been processed to related entities yet.  "
   (exec-raw psqldb ["SELECT id, title, link, date, content, id_feed FROM entry WHERE id NOT IN (SELECT k FROM entities) AND id_feed IN (3, 4, 7, 9, 13, 14, 15, 16, 17, 18, 72, 79, 86, 97, 98, 99, 100) ORDER BY date DESC LIMIT ?" [batch-size]] :results))
@@ -123,12 +161,31 @@
           (where {:date [between [start-time end-time]]
                   :id_feed [in config/selected-feed-ids]})))
 
-(defn doc-content
+(defn processed-docs-from-time-range
+  "Time is epoch in  frss table"
+  [start-time end-time]
+  (select entry
+          (where {:date [between [start-time end-time]]
+                  :id_feed [in config/selected-feed-ids]
+                  :id [in (subselect processlog-ids)]})))
+
+
+(defn log-result
+  [doc-id success? version]
+  (insert processlog
+          (values [{:id doc-id :success success? :ver version}])))
+
+(defn doc-content-with-title
   "Returns title + content (parsed from html) for a given document entry as returned by docs-by-id"
   [doc-entry]
   (str/join ". " (list
                          (:title doc-entry)
                          (parse-html-fragment (str/join (list " " (:content doc-entry))))))) ;adding a space is a hack to stop jsoup from crashing and should be handle smarter somehow
+
+(defn doc-content
+  "Returns title + content (parsed from html) for a given document entry as returned by docs-by-id"
+  [doc-entry]
+    (parse-html-fragment (:content doc-entry)))
 
 (defn doc-content-by-id
   "List of document ID's (contained in database) -> list of document contents "
@@ -220,4 +277,20 @@
     (map group-to-cluster-entry doc-relations-grouped)))
 
 
+(defn select-entities-by-docid [docids]
+  (select namedentities
+          (fields :strings.entstring)
+          (where {:docid [in docids]})
+          (join strings (= :strings.id :id))))
+
+
+
+(defn write-entities [entity-records string-lists]
+  (transaction
+    (if (seq entity-records)
+    (insert namedentities
+           (values entity-records)))
+    (if (seq string-lists)
+    (insert strings
+            (values string-lists)))))
 

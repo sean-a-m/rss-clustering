@@ -54,7 +54,7 @@
         weight (second esw)]
     (vector (first edges) (second edges) weight)))
 
-(defn- entity-freqs
+(defn entity-freqs
   "ent-doc-map is the result of (ent-doc-sets doc-recs)"
   [ent-doc-map]
   (frequencies (map first ent-doc-map)))
@@ -74,13 +74,27 @@
   [weighted-edges]
     (reduce update-edge-sum {} weighted-edges))
 
-(defn create-graph-edges
+(defn create-graph-edges-old
   [doc-recs]
   (let [ent-doc-map (ent-doc-sets doc-recs)
         grouped (group-by first ent-doc-map)
         ef (entity-freqs ent-doc-map)
         shared-entity-sets (zipmap (keys grouped) (map #(map second %) (vals grouped)))]
     (apply concat (map #(edges-from-shared-entity (val %) (get ef (key %))) shared-entity-sets))))
+
+(defn create-graph-edges
+  [ent-doc-sets]
+  (let [grouped (group-by first ent-doc-sets)
+        ef (entity-freqs ent-doc-sets)
+        shared-entity-sets (zipmap (keys grouped) (map #(map second %) (vals grouped)))]
+    (apply concat (map #(edges-from-shared-entity (val %) (get ef (key %))) shared-entity-sets))))
+
+(defn create-graph-edges-newer
+  [ent-doc-sets]
+  (let [grouped (group-by first ent-doc-sets)
+        ef (entity-freqs ent-doc-sets)
+        shared-entity-sets (zipmap (keys grouped) (map #(map second %) (vals grouped)))]
+    (apply concat (map #(edges-from-shared-entity (val %) 1) shared-entity-sets))))
 
 (defn create-graph-new
   [graph-edges]
@@ -94,6 +108,9 @@
        (add-like-edges)
        (map set-to-loom-vector)
        (create-graph-new)))
+
+
+
 
 ;TODO: Deal with nodes with no connection
 
