@@ -37,16 +37,6 @@
       (sort-by count
         (cset/intersection s1 s2)))))
 
-(defn contained-in-mention?
-  "Is the start and end of span contained within this coref mention?
-  For whatever reason CoreNLP coreference indices are zero indexed but token indices aren't"
-  [start end sent mention]
-  (println "start: " start "end: " end "mention: " mention)
-  (and
-    (<= end (dec (.endIndex mention)))
-    (>= start (dec (.startIndex mention)))
-    (= sent (.sentIndex mention))))
-
 (defn text-list-to-annotations
   [texts]
   (map #(new Annotation %) texts))

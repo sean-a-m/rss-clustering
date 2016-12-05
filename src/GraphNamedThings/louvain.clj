@@ -161,7 +161,6 @@
 
 (defn max-graph-modularity
   [g m node-index ki-table cs-node-vector]
-  (println "START")
   (doseq [node (keys node-index)]
     (max-dQ g m (get ki-table node) cs-node-vector node))
   cs-node-vector)
