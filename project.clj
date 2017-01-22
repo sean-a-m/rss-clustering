@@ -21,14 +21,22 @@
                  [http-kit "2.1.18"]
                  [criterium "0.4.4"]
                  [org.clojure/data.json "0.2.6"]
+                 [ring/ring-json "0.4.0"]
                  [clj-http "2.3.0"]
                  [compojure "1.5.1"]
                  [javax.servlet/javax.servlet-api "3.1.0"]
-                 [danlentz/clj-uuid "0.1.6"]]
+                 [clj-postgresql "0.4.0"]
+                 ;[clmcll/clmcll "0.1.0-SNAPSHOT"]
+                 [net.mikera/vectorz-clj "0.45.0"]
+                 [clatrix "0.5.0"]
+                 [danlentz/clj-uuid "0.1.6"]
+                 [cheshire "5.7.0"]]
   :main ^:skip-aot GraphNamedThings.core
   :target-path "target/%s"
-  :jvm-opts ["-Xmx2g"]
+  :jvm-opts ["-Xmx1600m"]
   :global-vars {*warn-on-reflection* true
                 *unchecked-math* true
                 *assert* false}
   :profiles {:uberjar {:aot :all}})
+~
+    ~

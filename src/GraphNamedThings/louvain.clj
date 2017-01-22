@@ -1,8 +1,6 @@
 (ns GraphNamedThings.louvain
   (:require [loom.graph]
             [loom.alg]
-            [clojure.set :as cset]
-            [GraphNamedThings.util :as util]
             [clojure.math.combinatorics :as combo]))
 
 (defn preexisting-comm-assignments
@@ -48,10 +46,6 @@
   [g ev]
   (get-in (:adj g) ev))
 
-(defn get-edge-weight-for-node
-  [g node edges]
-  (get-in (:adj g) '(node edges)))
-
 (defn inside-connections-sum
   [g c]
   (let [edge-combos (combo/combinations c 2)
@@ -60,20 +54,25 @@
              (remove nil?))]
     (transduce xf + edge-combos)))
 
+(defn get-community-weight [g c i]
+  "Edge weight between node i and community c"
+  (-> (:adj g)
+      (get i)
+      (select-keys c)
+      (vals)))
+
 (defn adjust-change-connection
   "Calculate the change in the internal edge weight of a community c in graph g when adding or removing the node i"
   [g c i]
-  (let [xf (comp
-             (map (partial get-edge-weight-for-node g i))
-             (remove nil?))]
-    (transduce xf + c)))
+  (reduce +
+          (get-community-weight g c i)))
 
 (defn get-connected-comms
   [i g node-index]
   (->> i
        (get (:adj g))  ;get the edges connecting to i
        (keys)  ;get the list of nodes connected to i
-       (util/select-keys-trans node-index) ;get the communities the connecting nodes are part of
+       (select-keys node-index) ;get the communities the connecting nodes are part of
        (vals)
        (distinct)))
 
@@ -81,15 +80,15 @@
   "Sum of weights of links to node i"
   ^double [g i]
   (reduce +
-    (vals
-      (get (:adj g) i))))
+          (vals
+            (get (:adj g) i))))
 
 (defn ki-in
   "Sum of weights of links from node i to community c"
   [g c i]
   (reduce +
-    (vals
-      (select-keys (get (:adj g) i) c))))
+          (vals
+            (select-keys (get (:adj g) i) c))))
 
 (defn build-ki-table
   [g is]
@@ -112,15 +111,16 @@
   (update m k (fnil #(conj % v) '())))
 
 (defn community-recalc!
-  [g cs i c1 c2 s-table]
-  (let [c1-adjust (adjust-change-connection g (get cs c1) i)
-        c2-adjust (adjust-change-connection g (get cs c2) i)]
-    (assoc! cs c2 (conj (get cs c2) i))
-    (assoc! s-table c2 (+ c2-adjust (get s-table c2))
-            (if (> 2 (count (get cs c1)))
-              (dissoc! cs c1)
-              ((assoc! cs c1 (remove #{i} (get cs c1)))
-                (assoc! s-table c1 (- c1-adjust (get s-table c1))))))))
+  [g i c1 c2 state]
+  (let [c1-adjust (adjust-change-connection g (get (:comms @state) c1) i)
+        c2-adjust (adjust-change-connection g (get (:comms @state) c2) i)]
+    (swap! state update-in [:comms c2] conj i)
+    (swap! state update-in [:i-weights c2] + c2-adjust)
+    (if (> 2 (count (get (:comms @state) c1)))
+      (swap! state update :comms dissoc c1)
+      (do
+        (swap! state update-in [:comms c1] (fn [v m] (remove m v)) #{i})
+        (swap! state update-in [:i-weights c1] - c1-adjust)))))
 
 (defn dQ
   [g m ki-i i curr_com s-tot test_comm]
@@ -132,9 +132,9 @@
           m))))
 
 (defn update-data-structures!
-  [g cs i cur-comm dQ-max node-index s-table]
-  (community-recalc! g cs i cur-comm dQ-max s-table)
-  (assoc! node-index i dQ-max))
+  [g i cur-comm dQ-max state]
+  (community-recalc! g i cur-comm dQ-max state)
+  (swap! state assoc-in[:nodes i] dQ-max))
 
 (defn find-dQ-max
   [g m ki-i i cur-comm s-table comm-candidates]
@@ -148,22 +148,23 @@
           (recur max-item max-val (rest comm-candidates)))))))
 
 (defn max-dQ
-  [g m ki-i cs-node-vector i]
-  (let [[cs node-index s-table] cs-node-vector
-        cur-comm (get node-index i)
-        candidate-comms (cons cur-comm (get-connected-comms i g node-index))
-        c-candidate-c (util/select-keys-trans cs candidate-comms)]
-    (let [dQ-max (find-dQ-max g m ki-i i cur-comm s-table c-candidate-c)]
+  [g m ki-i state i]
+  (let [;[cs node-index s-table] cs-node-vector
+        cur-comm (get (:nodes @state) i)
+        candidate-comms (cons cur-comm (get-connected-comms i g (:nodes @state)))
+        c-candidate-c (select-keys (:comms @state) candidate-comms)]
+    (let [dQ-max (find-dQ-max g m ki-i i cur-comm (:i-weights @state) c-candidate-c)]
       (if (not= dQ-max cur-comm)
-        (update-data-structures! g cs i cur-comm dQ-max node-index s-table)
-        nil))))
-
+        (do
+          (swap! state assoc :modified? true)
+          (update-data-structures! g i cur-comm dQ-max state))))))
 
 (defn max-graph-modularity
   [g m node-index ki-table cs-node-vector]
-  (doseq [node (keys node-index)]
-    (max-dQ g m (get ki-table node) cs-node-vector node))
-  cs-node-vector)
+  (do
+    (swap! cs-node-vector assoc :modified? false)
+    (doseq [node (keys node-index)]
+      (max-dQ g m (get ki-table node) cs-node-vector node))))
 
 (defn update-in-keyvalue
   [m entry]
@@ -179,11 +180,13 @@
         m (total-link-weight g)
         ki-table (build-ki-table g (keys node-index))
         f-max-modularity (partial max-graph-modularity g m node-index ki-table)
-        cs-node-vector [(transient cs) (transient node-index) (transient s-table)]
-        limit 8]
-    (loop [csnodevector cs-node-vector iterations 0]
-      (let [new-vector (f-max-modularity csnodevector)]
-        (if (and (not= (second new-vector) (second csnodevector))
-                 (> limit iterations))
-          (recur new-vector (inc iterations))
-          (vector (persistent! (first new-vector)) (persistent! (second new-vector))))))))
+        state (atom {:comms cs :nodes node-index :i-weights s-table :modified? true})
+        limit 15]
+    (loop [iterations 0]
+      (if (and (:modified? @state)
+               (> limit iterations))
+        (do
+          (println "Iterating graph...")
+          (f-max-modularity state)
+          (recur (inc iterations)))
+        (assoc @state :iterations iterations)))))

@@ -11,6 +11,8 @@
             [taoensso.nippy :as nippy]
             [korma.core :refer :all]
             [clj-uuid :as uuid]
+            [clj-postgresql.core :as pg]
+            [clojure.java.jdbc :as jdbc]
             [GraphNamedThings.config :as config])
   (:import org.jsoup.Jsoup))
 
@@ -27,6 +29,8 @@
    })
 
 (defdb mydb psqldb)
+
+(def db2 (pg/pool :host config/dbhost :user config/psql-user :dbname config/dbname :password config/psql-pass))
 
 (defentity entry
            (database psqldb)
@@ -54,6 +58,12 @@
            (database mydb)
            (belongs-to namedentities)
            (entity-fields :id :entstring :count))
+
+;TODO: replace this with better table schema
+(defentity doc-source
+           (database mydb)
+           (table :entry)
+           (entity-fields :id :id_feed))
 
 
 (defn parse-html-fragment
@@ -108,10 +118,14 @@
   (into {} (map #(vector (:id %) (doc-content %)) (docs-by-id id-list))))
 
 (defn get-entity-records [docids]
-  (select namedentities
-          (fields :strings.entstring)
-          (where {:docid [in docids]})
-          (join strings (= :strings.id :id))))
+  (let [bad-tags '("DATE" "NUMBER" "ORDINAL" "DURATION" "TIME" "PERCENT")
+        bad-strings '("guardian" "reuters" "politico")]
+    (select namedentities
+            (fields :strings.entstring)
+            (where (and {:docid [in docids]}
+                        (not (in :tag bad-tags))
+                        (not (in :strings.entstring bad-strings))))
+            (join strings (= :strings.id :id)))))
 
 (defn write-entities [entity-records string-lists]
   (transaction
@@ -122,3 +136,25 @@
       (insert strings
               (values string-lists)))))
 
+(defn get-doc-sources [doc-ids]
+  (select doc-source
+          (where {:id [in doc-ids]})))
+
+
+(defn get-doc-out [doc-ids]
+  (let [prepared-stuff (clojure.string/join ", " (take (count doc-ids) (repeat "?::bigint")))
+        query (str "WITH document_items AS (
+                      WITH document_strings AS (
+                        SELECT namedentities.docid, array_agg(strings.entstring)
+                         FROM namedentities, strings
+                         WHERE namedentities.id = strings.id AND NOT namedentities.tag IN ('DATE', 'NUMBER', 'ORDINAL', 'DURATION', 'TIME', 'PERCENT')
+                         GROUP BY namedentities.docid)
+                  SELECT entry.id, entry.title, entry.link, entry.date, entry.id_feed, document_strings.array_agg
+                    FROM entry, document_strings
+                    WHERE document_strings.docid=entry.id)
+                  SELECT * FROM document_items WHERE document_items.id IN (" prepared-stuff ")")
+        stmnt (apply vector query doc-ids)]
+    (jdbc/query db2 stmnt)))
+
+ ; (let [bigints (map biginteger doc-ids)]
+ ;   (let [bigint-array (.createArrayOf (jdbc/get-connection db2) "bigint" (into-array BigInteger (vec bigints)))]

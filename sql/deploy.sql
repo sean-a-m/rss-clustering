@@ -15,4 +15,5 @@ CREATE TABLE processlog(
 	id BIGINT PRIMARY KEY NOT NULL,
 	success BOOLEAN NOT NULL,
 	ver SMALLINT NOT NULL);
-	
+
+CREATE INDEX tag_idx ON namedentities (lower(tag)); 

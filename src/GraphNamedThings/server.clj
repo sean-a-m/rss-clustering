@@ -2,9 +2,13 @@
   (:use compojure.core)
   (:require [GraphNamedThings.buildclusters :as bc]
             [org.httpkit.server :as http]
+            [compojure.core :refer :all]
             [compojure.handler :as handler]
             [compojure.route :as route]
+            [ring.util.response :refer [response]]
+            [cheshire.core :as ch]
             [clojure.data.json :as json]
+            [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
             [clj-time.core :as t]
             [clj-time.format :as f]
             [clojure.java.io :as io]))
@@ -21,33 +25,19 @@
 
 (defn respond [resp]
   {:status 200
-   :headers {"Content-Type" "text/html"}
+   :headers {"Content-Type" "application/json"}
    :body resp})
 
-(defn request-interval [nlp-pipe]
-  (fn [req]
-    (let [reqmap (json/read (io/reader (:body req) :encoding "UTF-8") :key-fn keyword)]
-      (if (validated? reqmap)
-        (respond (json/write-str
-                   (bc/get-clusters nlp-pipe (parse-datetime (:startdate reqmap)) (parse-datetime (:enddate reqmap)))))
-        (respond "Bad request")))))
+(defn request-documents [app-state]
+  (response
+    (ch/generate-string @app-state)))
+;(json/write-str @app-state)))
 
-(defn ok [req]
-  {:status 200
-   :headers {"Content-Type" "text/html"}
-   :body "OK!"})
+(defn app-routes [app-state]
+  (compojure.core/routes
+    (GET "/" []
+      (request-documents app-state))))
 
-(defn echo [req]
-  {:status 200
-   :headers {"Content-Type" "text/html"}
-   :body req})
-
-(defn route-my-pipe [nlp-pipe]
-  (defroutes all-routes
-     (POST "/" [] (request-interval nlp-pipe))
-     (GET "/" [] ok)
-     (route/resources "/")))
-
-(defn runserver [nlp-pipe]
-  (http/run-server (handler/site (route-my-pipe nlp-pipe)) {:port 9002}))
-
+(defn runserver [app-state]
+  (http/run-server
+    (handler/site (app-routes app-state)) {:port 9002}))
