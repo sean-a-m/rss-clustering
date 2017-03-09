@@ -34,7 +34,7 @@
 
 (defentity entry
            (database psqldb)
-           (entity-fields :id :title :link :date :content :id_feed))
+           (entity-fields :id :title :link :date :content :id_feed :accessed :scrape :scrape_success))
 
 (defentity entry-ids
            (database psqldb)
@@ -93,7 +93,8 @@
   (select entry
           (where {:date [between [start-time end-time]]
                   :id_feed [in config/selected-feed-ids]
-                  :id [in (subselect processlog-ids)]})))
+                  :id [in (subselect processlog-ids)]
+                  :accessed true})))
 
 (defn log-result
   [doc-id success? version]
@@ -110,7 +111,9 @@
 (defn doc-content
   "Returns title + content (parsed from html) for a given document entry as returned by docs-by-id"
   [doc-entry]
-    (parse-html-fragment (:content doc-entry)))
+  (if (= (:scrape_success doc-entry) true)
+    (:scrape doc-entry)
+    (parse-html-fragment (:content doc-entry))))
 
 (defn doc-content-by-id
   "List of document ID's (contained in database) -> list of document contents "
@@ -156,5 +159,3 @@
         stmnt (apply vector query doc-ids)]
     (jdbc/query db2 stmnt)))
 
- ; (let [bigints (map biginteger doc-ids)]
- ;   (let [bigint-array (.createArrayOf (jdbc/get-connection db2) "bigint" (into-array BigInteger (vec bigints)))]

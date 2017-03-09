@@ -9,14 +9,21 @@
 (defn update-response
   "Repeatedly update the document clusters returned by the server"
   [app-state]
-  (let [start-epoch (coerce/to-epoch
-                      (t/ago (t/hours 24)))
-        end-epoch (coerce/to-epoch
-                    (t/now))]
-    (doseq
-      (println "Updating results")
-      (webout/update-results app-state start-epoch end-epoch)
-      (Thread/sleep 60000))))
+  (loop []
+    (let [start-epoch (coerce/to-epoch
+                        (t/ago (t/hours 24)))
+          end-epoch (coerce/to-epoch
+                      (t/now))]
+
+        (println "Updating results")
+        (webout/update-results app-state start-epoch end-epoch)
+        (Thread/sleep 60000))
+      (recur)))
+
+(defn process-things [nlp-pipe batch-size]
+  (loop []
+    (pc/process-things! nlp-pipe batch-size)
+    (recur)))
 
 (defn -main
   [& args]
@@ -26,15 +33,8 @@
                 (.put "timeout" 30000))
         nlp-pipe (new StanfordCoreNLP props)
         app-state (atom nil)]
-    (future
-      (loop []
-        (pc/process-things! nlp-pipe 1)
-        (println "processing finished...")
-        (recur)))
-    (future
-      (loop []
-        (update-response app-state)
-        (recur)))
-    (server/runserver app-state)))
+    (future (process-things nlp-pipe 1))
+    (future (update-response app-state))
+    (future (server/runserver app-state))))
 
 

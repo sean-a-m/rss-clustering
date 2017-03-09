@@ -38,5 +38,3 @@
                 *unchecked-math* true
                 *assert* false}
   :profiles {:uberjar {:aot :all}})
-~
-    ~

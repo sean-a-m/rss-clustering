@@ -20,6 +20,5 @@
         cur-ids (into #{} (map :id (flatten @app-state)))]
     (println "Getting docs between " start-epoch "and " end-epoch)
     (if (not= new-ids cur-ids)
-      ((println "New articles: " (count new-ids))
-        (reset! app-state (gen-results start-epoch end-epoch)))
+        (reset! app-state (gen-results start-epoch end-epoch))
       app-state)))

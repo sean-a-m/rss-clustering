@@ -16,8 +16,8 @@
 (defn process-things! [nlp-pipe batch-size]
   	(let [processed (process-next-document-set! nlp-pipe batch-size)]
 		(if (empty? processed)
-			(Thread/sleep 300000)
-  			(Thread/sleep 1000))))
+			(Thread/sleep 30000)
+  			(Thread/sleep 300))))
 ;  (recur nlp-pipe batch-size))
 
 
