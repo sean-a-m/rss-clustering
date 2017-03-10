@@ -121,8 +121,8 @@
   (into {} (map #(vector (:id %) (doc-content %)) (docs-by-id id-list))))
 
 (defn get-entity-records [docids]
-  (let [bad-tags '("DATE" "NUMBER" "ORDINAL" "DURATION" "TIME" "PERCENT")
-        bad-strings '("guardian" "reuters" "politico")]
+  (let [bad-tags '("DATE" "NUMBER" "ORDINAL" "DURATION" "TIME" "PERCENT" "MONEY")
+        bad-strings '("guardian" "reuters" "politico" "associated press" "ap" "getty" "getty images")]
     (select namedentities
             (fields :strings.entstring)
             (where (and {:docid [in docids]}
