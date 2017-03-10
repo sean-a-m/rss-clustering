@@ -20,5 +20,6 @@
         cur-ids (into #{} (map :id (flatten @app-state)))]
     (println "Getting docs between " start-epoch "and " end-epoch)
     (if (not= new-ids cur-ids)
-        (reset! app-state (gen-results start-epoch end-epoch))
+      (doall
+        (reset! app-state (gen-results start-epoch end-epoch)))
       app-state)))
