@@ -149,13 +149,14 @@
         query (str "WITH document_items AS (
                       WITH document_strings AS (
                         SELECT namedentities.docid, array_agg(strings.entstring)
-                         FROM namedentities, strings
-                         WHERE namedentities.id = strings.id AND NOT namedentities.tag IN ('DATE', 'NUMBER', 'ORDINAL', 'DURATION', 'TIME', 'PERCENT')
-                         GROUP BY namedentities.docid)
-                  SELECT entry.id, entry.title, entry.link, entry.date, entry.id_feed, document_strings.array_agg
-                    FROM entry, document_strings
-                    WHERE document_strings.docid=entry.id)
-                  SELECT * FROM document_items WHERE document_items.id IN (" prepared-stuff ")")
+                          FROM namedentities, strings
+                            WHERE namedentities.id = strings.id AND namedentities.docid IN (" prepared-stuff ")
+                            AND NOT namedentities.tag IN ('DATE', 'NUMBER', 'ORDINAL', 'DURATION', 'TIME', 'PERCENT', 'MONEY')
+                            GROUP BY namedentities.docid)
+                      SELECT entry.id, entry.title, entry.link, entry.date, entry.id_feed, document_strings.array_agg
+                        FROM entry, document_strings
+                        WHERE document_strings.docid=entry.id)
+                    SELECT * FROM document_items")
         stmnt (apply vector query doc-ids)]
     (jdbc/query db2 stmnt)))
 
