@@ -11,12 +11,8 @@ CREATE TABLE strings(
 
 CREATE UNIQUE INDEX idxr ON strings (entstring, id);
 
-CREATE TABLE processlog(
-	id BIGINT PRIMARY KEY NOT NULL,
-	success BOOLEAN NOT NULL,
-	ver SMALLINT NOT NULL);
-
 CREATE INDEX tag_idx ON namedentities (lower(tag)); 
+CREATE INDEX docid_idx ON namedentities (docid);
 
 CREATE TABLE entry
 (
@@ -31,9 +27,13 @@ CREATE TABLE entry
   rowid bigint,
   accessed boolean NOT NULL DEFAULT false,
   scrape TEXT,
+  text_processed BOOLEAN NOT NULL DEFAULT false,
+  process_success BOOLEAN,
   CONSTRAINT entry_pkey PRIMARY KEY (id),
   CONSTRAINT aconstraint UNIQUE (rowid)
 )
+
+CREATE INDEX entry_date_idx ON entry (date);
 
 ALTER TABLE strings ADD FOREIGN KEY (id) REFERENCES namedentities ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE namedentities ADD FOREIGN KEY (docid) REFERENCES entry (id) ON DELETE CASCADE ON UPDATE CASCADE;

@@ -82,8 +82,9 @@
 
 (defn select-newest-unprocessed [batch-size]
   (select entry-ids
-      (where (and (not (in :id (subselect processlog-ids)))
-              (in :id_feed config/selected-feed-ids)))
+      (where {:text_processed false
+              :accessed true
+              :id_feed [in config/selected-feed-ids]})
           (limit batch-size)
           (order :id :DESC)))
 
@@ -93,13 +94,15 @@
   (select entry
           (where {:date [between [start-time end-time]]
                   :id_feed [in config/selected-feed-ids]
-                  :id [in (subselect processlog-ids)]
-                  :accessed true})))
+                  :text_processed true
+                  :process_success true})))
 
 (defn log-result
-  [doc-id success? version]
-  (insert processlog
-          (values [{:id doc-id :success success? :ver version}])))
+  [doc-id success?]
+  (update entry
+          (set-fields {:process_success success?
+                       :text_processed true})
+          (where (= :id doc-id))))
 
 (defn doc-content-with-title
   "Returns title + content (parsed from html) for a given document entry as returned by docs-by-id"

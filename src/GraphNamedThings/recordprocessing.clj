@@ -30,8 +30,8 @@
         entity-record-list (map (partial build-entity-record id) entity-list)]
     (try
         (diskio/write-entities entity-record-list entity-string-list)
-        (catch Exception e (diskio/log-result id false "1"))
-        (finally (diskio/log-result id true "1")))))
+        (catch Exception e (diskio/log-result id false))
+        (finally (diskio/log-result id true)))))
 
 (defn build-and-write-new-entity-records
   "Create new entity records from a list of ids and write them to a database"
