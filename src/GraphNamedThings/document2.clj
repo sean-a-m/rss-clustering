@@ -102,6 +102,16 @@
   (let [connected-ents (connect-ents ent-recs)]
     (mapcat connect-doc-set connected-ents)))
 
+(defn format-graph [set-weight-pair]
+  (let [[edge weight] set-weight-pair]
+    (vector (first edge) (second edge) weight)))
+
+
+(defn weight-docs [ent-recs]
+  (map format-graph
+    (frequencies
+      (map (partial into #{}) (connect-docs ent-recs)))))
+
 (defn add-doc-entry
   [collected-strings doc-idx ent-rec]
   (let [containing-set (first (filter #(contains? % (:entstring ent-rec)) collected-strings))]

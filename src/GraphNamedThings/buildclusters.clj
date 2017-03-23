@@ -64,8 +64,9 @@
     (println "Generating new cluster...")
     (->> ids
          (dbio/get-entity-records)
-         (filter #(comp contains? #{"reuters" "politico" "guardian"} (:entstring %)))
+         (filter #(comp contains? #{"reuters" "politico" "guardian" "associated press" "donald trump" "trump" "american" "america" "u.s." "us"} (:entstring %)))
          (filter #(comp contains? #{10} (:id_feed %)))
-         (d2/connect-docs)
+         ;(d2/connect-docs)
+         (d2/weight-docs)
          (apply graph/weighted-graph)
          (l/iterate-louvain-modularity '()))))

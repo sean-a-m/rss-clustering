@@ -10,6 +10,7 @@ CREATE TABLE strings(
 	PRIMARY KEY (id, entstring));
 
 CREATE UNIQUE INDEX idxr ON strings (entstring, id);
+CREATE INDEX string_idx ON strings (lower(entstring)); 
 
 CREATE INDEX tag_idx ON namedentities (lower(tag)); 
 CREATE INDEX docid_idx ON namedentities (docid);
