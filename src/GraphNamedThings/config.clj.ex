@@ -22,4 +22,5 @@
 ;limit the number of sentences to process
 (def max-sentences 10)
 
-
+;how long to wait between recalculating results in milliseconds
+(def update-delay 360000)

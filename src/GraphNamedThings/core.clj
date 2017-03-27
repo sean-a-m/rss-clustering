@@ -3,7 +3,8 @@
             [GraphNamedThings.processdata :as pc]
             [GraphNamedThings.weboutput :as webout]
             [clj-time.core :as t]
-            [clj-time.coerce :as coerce])
+            [clj-time.coerce :as coerce]
+            [GraphNamedThings.config :as config])
   (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]))
 
 (defn update-response
@@ -15,9 +16,9 @@
           end-epoch (coerce/to-epoch
                       (t/now))]
 
-        (println "Updating results")
-        (webout/update-results app-state start-epoch end-epoch)
-        (Thread/sleep 60000))
+      (println "Updating results")
+      (webout/update-results app-state start-epoch end-epoch)
+      (Thread/sleep config/update-delay))
       (recur)))
 
 (defn process-things [nlp-pipe batch-size]
