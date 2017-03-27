@@ -25,11 +25,12 @@
 
 (defn respond [resp]
   {:status 200
-   :headers {"Content-Type" "application/json"}
+   :headers {"Content-Type" "application/json"
+             "Access-Control-Allow-Origin" "*"}
    :body resp})
 
 (defn request-documents [app-state]
-  (response
+  (respond
     (ch/generate-string @app-state)))
 ;(json/write-str @app-state)))
 

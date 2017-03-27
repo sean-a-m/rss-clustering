@@ -164,7 +164,7 @@
     (jdbc/query db2 stmnt)))
 
 (defn get-string-counts [strings]
-  (let [prepared-stuff (clojure.string/join ", " (take (count strings) (repeat "?::string")))
+  (let [prepared-stuff (clojure.string/join ", " (take (count strings) (repeat "?::text")))
         query (str "SELECT entstring, count(*)
                       FROM strings WHERE entstring IN (" prepared-stuff ")
                       GROUP BY entstring")

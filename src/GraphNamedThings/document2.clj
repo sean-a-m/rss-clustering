@@ -6,6 +6,7 @@
             [clojure.core.reducers :as r]
             [loom.alg]
             [loom.graph :as graph]
+            [medley.core :as me]
             [GraphNamedThings.dbio :as dbio]
             [clojure.math.combinatorics :as combo]))
 
@@ -96,15 +97,57 @@
               (distinct
                 (map :docid ent-recs)) 2))
 
+(defn connect-doc-set2
+  [ent-recs]
+  ; (let [doc-records (dbio/get-doc-sources (map :docid ent-recs))
+  ;       ds-idx (get-doc-source-index doc-records)]
+  (combo/combinations
+    (me/distinct-by :docid ent-recs) 2))
+
+
 (defn connect-docs
   [ent-recs]
   "from connected entities"
   (let [connected-ents (connect-ents ent-recs)]
     (mapcat connect-doc-set connected-ents)))
 
+(defn build-vector-weight-pairs [string-counts total-count entity-pair]
+  ;TODO: calculate total in this function
+  (let [[first-ent second-ent] entity-pair]
+    (vector
+      (into #{}
+            (list
+              (:docid first-ent)
+              (:docid second-ent)))
+      (if (= (:entstring first-ent) (:entstring second-ent))
+        (/ total-count (get string-counts (:entstring first-ent)))
+        (/ total-count (+ (get string-counts (:entstring first-ent)) (get string-counts (:entstring second-ent))))))))
+
+(defn format-graph2 [item]
+  (vector
+    (first (key item))
+    (second (key item))
+    (reduce + (map last (val item)))))
+
+(defn connect-docs2
+  [ent-recs]
+  "from connected entities"
+  (let [connected-ents (connect-ents ent-recs)
+        string-counts (reduce #(assoc %1 (:entstring %2) (:count %2)) {} (dbio/get-string-counts (map :entstring ent-recs)))
+        total-count (reduce + (vals string-counts))]
+    (->> ent-recs
+         (connect-ents)
+         (mapcat connect-doc-set2)
+         (map (partial build-vector-weight-pairs string-counts total-count))
+         (group-by first)
+         (map format-graph2))))
+
+    ;(mapcat connect-doc-set2 connected-ents)))
+
 (defn format-graph [set-weight-pair]
   (let [[edge weight] set-weight-pair]
     (vector (first edge) (second edge) weight)))
+
 
 
 (defn weight-docs [ent-recs]
