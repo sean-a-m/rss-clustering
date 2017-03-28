@@ -1,16 +1,9 @@
 ;Data processing functions specific to a type of database or document source
 
 (ns GraphNamedThings.dbio
-  (:require [clojure-csv.core :as csv]
-            [clojure.java.io :as io]
-            [clojure.string :as str]
-            [clj-time.core :as t]
-            [clj-time.coerce :as coerce]
+  (:require [clojure.string :as str]
             [korma.db :refer :all]
-            [clojure.data.json :as json]
-            [taoensso.nippy :as nippy]
             [korma.core :refer :all]
-            [clj-uuid :as uuid]
             [clj-postgresql.core :as pg]
             [clojure.java.jdbc :as jdbc]
             [GraphNamedThings.config :as config])

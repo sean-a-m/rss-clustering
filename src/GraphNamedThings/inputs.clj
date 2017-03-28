@@ -1,7 +1,6 @@
 (ns GraphNamedThings.inputs
-  (:require [GraphNamedThings.util :as util]
-           [GraphNamedThings.nlputil :as nlputil]
-           [GraphNamedThings.corenlpdefs :as nlpdefs]
+  (:require [GraphNamedThings.nlputil :as nlputil]
+            [GraphNamedThings.corenlpdefs :as nlpdefs]
             [clj-uuid :as uuid]
             [GraphNamedThings.config :as config])
   (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]

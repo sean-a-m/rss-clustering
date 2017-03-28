@@ -1,12 +1,6 @@
 (ns GraphNamedThings.weboutput
-  (:require [GraphNamedThings.config :as config]
-            [GraphNamedThings.buildclusters :as bc]
-            [GraphNamedThings.dbio :as dbio]
-            [loom.graph :as graph]
-            [clj-time.core :as t]
-            [clj-time.coerce :as coerce])
-  (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]
-           [GraphNamedThings.dbio doccluster]))
+  (:require [GraphNamedThings.buildclusters :as bc]
+            [GraphNamedThings.dbio :as dbio]))
 
 
 (defn gen-results [start-epoch end-epoch]

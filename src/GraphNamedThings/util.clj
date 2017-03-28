@@ -1,5 +1,4 @@
-(ns GraphNamedThings.util
-  (:require [digest :as digest]))
+(ns GraphNamedThings.util)
 
 (defn tails
   [xs]
@@ -7,14 +6,6 @@
     (if (< 0 (count xs))
       (cons xs (tails (rest xs)))
       nil)))
-
-(defn uuid! []
-  "Create a java uuid"
-  (str (java.util.UUID/randomUUID)))
-
-(defn sha256-bytes [string]
-  (.getBytes
-    (digest/sha-256 string)))
 
 (defn in?
   "Is an element in a collection?"

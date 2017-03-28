@@ -1,17 +1,14 @@
 (ns GraphNamedThings.buildclusters
-  (:require [GraphNamedThings.config :as config]
-            [GraphNamedThings.dbio :as dbio]
+  (:require [GraphNamedThings.dbio :as dbio]
             [GraphNamedThings.louvain :as l]
             [GraphNamedThings.document2 :as d2]
-    ;[clmcll.mcl :as mcl]
-    ;[louvainloom.louvain :as l]
+            ;[clmcll.mcl :as mcl]
+            ;[louvainloom.louvain :as l]
             [GraphNamedThings.recordprocessing :as processing]
             [GraphNamedThings.document :as document]
             [GraphNamedThings.feature-matrix :as fm]
             [GraphNamedThings.kmeans :as kmeans]
-            [loom.graph :as graph]
-            [clj-time.core :as t]
-            [clj-time.coerce :as coerce])
+            [loom.graph :as graph])
   (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]
            [GraphNamedThings.dbio doccluster]))
 

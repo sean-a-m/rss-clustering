@@ -1,11 +1,7 @@
 (ns GraphNamedThings.entity
-  (:require [GraphNamedThings.inputs :as inputs]
-            [GraphNamedThings.util :as util]
+  (:require [GraphNamedThings.util :as util]
             [GraphNamedThings.nlputil :as nlputil]
-            [GraphNamedThings.corenlpdefs :as nlpdefs]
-            [clojure.string :as str]
-            [clojure.set :as cset]
-            [digest :as digest]))
+            [clojure.set :as cset]))
 
 (defrecord index-rec [string hashed ])
 

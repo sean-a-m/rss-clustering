@@ -1,12 +1,7 @@
 (ns GraphNamedThings.recordprocessing
   (:require [GraphNamedThings.inputs :as inputs]
-            [GraphNamedThings.dbio :as diskio]
-            [GraphNamedThings.util :as util]
-            [GraphNamedThings.document :as document]
-            [clojure.set :as cset]
-            [GraphNamedThings.entity :as e]
-            [taoensso.nippy :as nippy]
-            [clojure.data.json :as json]))
+            [GraphNamedThings.dbio :as dbio]
+            [GraphNamedThings.entity :as e]))
 
 ;tags that shouldn't be used for classifying documents
 (def excluded-tags ["DATE" "NUMBER" "ORDINAL" "MISC" "MONEY" "DURATION" "TIME" "PERCENT" "SET" "NULL"])
@@ -24,14 +19,14 @@
 (defn build-and-write-new-entity-record
   "Create new entity records from a list of ids and write them to a database"
   [id nlp-pipe]
-  (let [doc-text (val (first (diskio/doc-content-by-id (list id))))
+  (let [doc-text (val (first (dbio/doc-content-by-id (list id))))
         entity-list (inputs/get-entity-list doc-text nlp-pipe)
         entity-string-list (flatten (map build-entity-string-list entity-list))
         entity-record-list (map (partial build-entity-record id) entity-list)]
     (try
-        (diskio/write-entities entity-record-list entity-string-list)
-        (catch Exception e (diskio/log-result id false))
-        (finally (diskio/log-result id true)))))
+      (dbio/write-entities entity-record-list entity-string-list)
+      (catch Exception e (dbio/log-result id false))
+      (finally (dbio/log-result id true)))))
 
 (defn build-and-write-new-entity-records
   "Create new entity records from a list of ids and write them to a database"
@@ -61,7 +56,7 @@
 
 (defn create-entity-records
   [ids]
-  (let [db-entities (diskio/get-entity-records ids)]
+  (let [db-entities (dbio/get-entity-records ids)]
     (->> db-entities
          (filter #(every? (partial not= (:tag %)) excluded-tags))
         (merge-maps)

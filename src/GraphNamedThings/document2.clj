@@ -1,9 +1,7 @@
 (ns GraphNamedThings.document2
-  (:require [GraphNamedThings.entity :as entity]
-            [loom.graph :as graph]
+  (:require [loom.graph :as graph]
             [clojure.set :as s]
             [clj-uuid :as uuid]
-            [clojure.core.reducers :as r]
             [loom.alg]
             [loom.graph :as graph]
             [medley.core :as me]
@@ -91,16 +89,12 @@
 
 (defn connect-doc-set
   [ent-recs]
- ; (let [doc-records (dbio/get-doc-sources (map :docid ent-recs))
- ;       ds-idx (get-doc-source-index doc-records)]
-            (combo/combinations
-              (distinct
-                (map :docid ent-recs)) 2))
+    (combo/combinations
+      (distinct
+        (map :docid ent-recs)) 2))
 
 (defn connect-doc-set2
   [ent-recs]
-  ; (let [doc-records (dbio/get-doc-sources (map :docid ent-recs))
-  ;       ds-idx (get-doc-source-index doc-records)]
   (combo/combinations
     (me/distinct-by :docid ent-recs) 2))
 

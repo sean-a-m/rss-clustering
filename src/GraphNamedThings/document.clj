@@ -1,6 +1,5 @@
 (ns GraphNamedThings.document
-  (:require [GraphNamedThings.entity :as entity]
-            [loom.graph :as graph]
+  (:require [loom.graph :as graph]
             [clojure.math.combinatorics :as combo]))
 
 
