@@ -5,7 +5,8 @@
             [clj-time.core :as t]
             [clj-time.coerce :as coerce]
             [GraphNamedThings.config :as config])
-  (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]))
+  (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation])
+  (:gen-class))
 
 (defn update-response
   "Repeatedly update the document clusters returned by the server"
