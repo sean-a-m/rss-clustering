@@ -1,15 +1,12 @@
-(ns GraphNamedThings.graphalg
+(ns GraphNamedThings.mcl
   (:require [loom.graph]
             [clojure.core.matrix :as m]
             [GraphNamedThings.util :as util]
             [clojure.core.matrix.dataset :as ds]))
 
-;TODO: split MCL and generic graph code into separate files
-;TODO: remove repeating code by moving graph structure logic into column creation functions
 ;TODO: consider using sparse arrays
 
 (defmulti graph-to-adj-mat loom.graph/weighted?)
-
 
 (defn adjmat-to-column
   [node nodeset]
@@ -115,7 +112,6 @@
   (keep-indexed
     #(if-not (zero? %2) %1)
     row))
-
 
 (defn mcl-connected
   "Return indices of connected element sets"

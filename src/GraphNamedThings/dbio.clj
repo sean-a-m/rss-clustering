@@ -1,16 +1,10 @@
-;Data processing functions specific to a type of database or document source
-
 (ns GraphNamedThings.dbio
-  (:require [clojure.string :as str]
-            [korma.db :refer :all]
+  (:require [korma.db :refer :all]
             [korma.core :refer :all]
             [clj-postgresql.core :as pg]
             [clojure.java.jdbc :as jdbc]
             [GraphNamedThings.config :as config])
   (:import org.jsoup.Jsoup))
-
-;defines one group of related document, where group-id can be an arbitrary id and doc-ids is a collection of document ids
-(defrecord doccluster [group-id doc-ids])
 
 (def psqldb
   {:classname   "org.postgresql.Driver"
@@ -33,15 +27,6 @@
            (database psqldb)
            (entity-fields :id)
            (table :entry))
-
-(defentity processlog
-           (database mydb)
-           (entity-fields :id :success :ver))
-
-(defentity processlog-ids
-           (database mydb)
-           (table :processlog)
-           (entity-fields :id))
 
 (defentity namedentities
            (database mydb)
@@ -97,15 +82,8 @@
                        :text_processed true})
           (where (= :id doc-id))))
 
-(defn doc-content-with-title
-  "Returns title + content (parsed from html) for a given document entry as returned by docs-by-id"
-  [doc-entry]
-  (str/join ". " (list
-                         (:title doc-entry)
-                         (parse-html-fragment (str/join (list " " (:content doc-entry))))))) ;adding a space is a hack to stop jsoup from crashing and should be handle smarter somehow
-
 (defn doc-content
-  "Returns title + content (parsed from html) for a given document entry as returned by docs-by-id"
+  "Returns content (parsed from html) for a given document entry as returned by docs-by-id"
   [doc-entry]
   (if (= (:scrape_success doc-entry) true)
     (:scrape doc-entry)
@@ -117,7 +95,7 @@
   (into {} (map #(vector (:id %) (doc-content %)) (docs-by-id id-list))))
 
 (defn get-entity-records [docids]
-  (let [bad-tags '("DATE" "NUMBER" "ORDINAL" "DURATION" "TIME" "PERCENT" "MONEY")
+  (let [bad-tags '("DATE" "NUMBER" "ORDINAL" "DURATION" "TIME" "PERCENT" "MONEY" "SET" "NULL")
         bad-strings '("guardian" "reuters" "politico" "associated press" "ap" "getty" "getty images")]
     (select namedentities
             (fields :strings.entstring)
@@ -138,7 +116,6 @@
 (defn get-doc-sources [doc-ids]
   (select doc-source
           (where {:id [in doc-ids]})))
-
 
 (defn get-doc-out [doc-ids]
   (let [prepared-stuff (clojure.string/join ", " (take (count doc-ids) (repeat "?::bigint")))

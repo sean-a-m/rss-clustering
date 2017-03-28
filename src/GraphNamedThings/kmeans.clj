@@ -4,7 +4,6 @@
 
 (m/set-current-implementation :clatrix)
 
-
 (defn cosine-sim [m1 m2]
   (let [m1m2 (* (m/length m1) (m/length m2))]
   (if (= 0.0 m1m2)

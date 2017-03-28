@@ -1,7 +1,5 @@
 (ns GraphNamedThings.test.inputs_test
-  (:require [clojure.set :as cset]
-            [clojure.core.matrix :as matrix]
-            [GraphNamedThings.nlputil :refer :all]
+  (:require [GraphNamedThings.nlputil :refer :all]
             [GraphNamedThings.test.testdata :refer :all]
             [clojure.test :refer :all]))
 

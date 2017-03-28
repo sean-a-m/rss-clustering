@@ -1,23 +1,13 @@
-(ns GraphNamedThings.inputs
+(ns GraphNamedThings.entities
   (:require [GraphNamedThings.nlputil :as nlputil]
             [GraphNamedThings.corenlpdefs :as nlpdefs]
-            [clj-uuid :as uuid]
-            [GraphNamedThings.config :as config])
+            [clj-uuid :as uuid])
   (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]
            [edu.stanford.nlp.ling CoreAnnotations$SentencesAnnotation CoreAnnotations$TokensAnnotation CoreAnnotations$PartOfSpeechAnnotation CoreAnnotations$TextAnnotation CoreAnnotations$CharacterOffsetBeginAnnotation CoreAnnotations$CharacterOffsetEndAnnotation]
            [edu.stanford.nlp.hcoref CorefCoreAnnotations$CorefChainAnnotation]))
 
 ;defines an entity derived from processing a document
 (defrecord entity [strings ner-tag])
-
-(defn ner-ids-from-tokens
-  "Return a list of id's, where each unique ID corresponds to one entity, from a list of tokens
-  This is just based on grouping adjacent tokens with identical entity tags (PERSON, PLACE, etc)"
-  [tokens]
-  (let [core-ner-list (map nlpdefs/get-ner-tag tokens)]
-    (flatten
-      (map-indexed #(repeat (count %2) %1)
-                   (partition-by #(not= "O" %) core-ner-list)))))
 
 (defn contained-in-chain-id
   "Returns the chain id if the coreference chain contains the mention span"
@@ -85,13 +75,6 @@
       (collect-corefs corefs)
       (map create-entity-from-vector)))
 
-(defn get-document-entities
-  "Retrieve the list of entity records belonging to one document annotation"
-  [annotation]
-  (let [tokens (nlpdefs/get-tokens annotation)
-        corefs (vals (nlpdefs/get-corefs annotation))]  ;get-corefs returns a hash map of java corefchain objects
-    (get-entities-from-document-vector tokens corefs)))
-
 (defn get-document-entities-new
   "Retrieve the list of entity records belonging to one document annotation"
   [annotation]
@@ -99,26 +82,13 @@
         corefs (vals (nlpdefs/get-corefs annotation))]  ;get-corefs returns a hash map of java corefchain objects
     (get-entities-from-document-vector tokens corefs)))
 
-(defn get-entity-lists
-  "Process a list of documents, returning a list of entity records"
-  [doc-text pipe]
-  (let [annotations (nlputil/text-list-to-annotations doc-text)]
-    (do
-      (. pipe annotate annotations)
-      (let [annotations-shortened (nlputil/text-list-to-annotations
-                                    (map #(take config/max-sentences (nlpdefs/get-sentences %)) annotations))]
-	(println doc-text)
-        (map get-document-entities annotations)))))
-
 (defn get-entity-list
   "Process a document, returning a list of entity records"
   [doc-text pipe]
   (let [annotation (nlputil/text-list-to-annotation doc-text)]
     (do
       (. pipe annotate annotation)
-      (let [annotation-shortened (nlputil/text-list-to-annotation
-                                    (take config/max-sentences (nlpdefs/get-sentences annotation)))]
         (println doc-text)
-        (get-document-entities-new annotation)))))
+        (get-document-entities-new annotation))))
 
 

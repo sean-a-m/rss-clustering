@@ -37,9 +37,6 @@
       (sort-by count
         (cset/intersection s1 s2)))))
 
-(defn text-list-to-annotations
-  [texts]
-  (map #(new Annotation %) texts))
 
 (defn text-list-to-annotation
   [text]

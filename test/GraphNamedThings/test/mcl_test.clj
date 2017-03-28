@@ -1,5 +1,5 @@
-(ns GraphNamedThings.test.graphalg_test
-  (:require [GraphNamedThings.graphalg :refer :all]
+(ns GraphNamedThings.test.mcl_test
+  (:require [GraphNamedThings.mcl :refer :all]
             [loom.graph :as loom]
             [loom.alg]
             [clojure.core.matrix :as m]

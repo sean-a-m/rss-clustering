@@ -1,10 +1,6 @@
 (ns GraphNamedThings.recordprocessing
-  (:require [GraphNamedThings.inputs :as inputs]
-            [GraphNamedThings.dbio :as dbio]
-            [GraphNamedThings.entity :as e]))
-
-;tags that shouldn't be used for classifying documents
-(def excluded-tags ["DATE" "NUMBER" "ORDINAL" "MISC" "MONEY" "DURATION" "TIME" "PERCENT" "SET" "NULL"])
+  (:require [GraphNamedThings.entities :as inputs]
+            [GraphNamedThings.dbio :as dbio]))
 
 (defn build-entity-string-list [entity]
   "Build a list of entity strings from an entity record"
@@ -37,35 +33,6 @@
   (let [strings (mapcat :entstring coll)]
     (assoc (first coll) :entstring strings)))
 
-(defn merge-maps [coll]
-  (->> coll
-       (map #(update % :entstring list))
-       (group-by :id)
-       (vals)
-       (map merge-map)))
 
-(defn get-entity-doc-vector
-  [entity-coref-map entity-record]
-  (let [resolved-entity-record (e/get-entity-id entity-coref-map entity-record)
-        doc-id (:docid entity-record)]
-    (vector resolved-entity-record doc-id)))
-
-(defn get-entity-doc-vectors
-  [entity-coref-map entity-records]
-  (map (partial get-entity-doc-vector entity-coref-map) entity-records))
-
-(defn create-entity-records
-  [ids]
-  (let [db-entities (dbio/get-entity-records ids)]
-    (->> db-entities
-         (filter #(every? (partial not= (:tag %)) excluded-tags))
-        (merge-maps)
-        (map #(clojure.set/rename-keys % {:entstring :strings, :tag :ner-tag})))))
-
-(defn create-document-records
-  [ids]
-  (let [entity-records (create-entity-records ids)
-        entity-coref-map (e/get-entity-merge-map {} entity-records)]
-    (get-entity-doc-vectors entity-coref-map entity-records)))
 
 

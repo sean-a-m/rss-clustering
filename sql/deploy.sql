@@ -2,6 +2,10 @@
 	id UUID PRIMARY KEY NOT NULL,
 	tag TEXT NOT NULL,
 	docid BIGINT NOT NULL);
+	
+ALTER TABLE namedentities ADD FOREIGN KEY (docid) REFERENCES entry (id) ON DELETE CASCADE ON UPDATE CASCADE;
+CREATE INDEX tag_idx ON namedentities (lower(tag)); 
+CREATE INDEX docid_idx ON namedentities (docid);
 
 CREATE TABLE strings(
 	id UUID NOT NULL,
@@ -9,11 +13,9 @@ CREATE TABLE strings(
 	count SMALLINT NOT NULL,
 	PRIMARY KEY (id, entstring));
 
+ALTER TABLE strings ADD FOREIGN KEY (id) REFERENCES namedentities ON DELETE CASCADE ON UPDATE CASCADE;
 CREATE UNIQUE INDEX idxr ON strings (entstring, id);
 CREATE INDEX string_idx ON strings (lower(entstring)); 
-
-CREATE INDEX tag_idx ON namedentities (lower(tag)); 
-CREATE INDEX docid_idx ON namedentities (docid);
 
 CREATE TABLE entry
 (
@@ -36,5 +38,3 @@ CREATE TABLE entry
 
 CREATE INDEX entry_date_idx ON entry (date);
 
-ALTER TABLE strings ADD FOREIGN KEY (id) REFERENCES namedentities ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE namedentities ADD FOREIGN KEY (docid) REFERENCES entry (id) ON DELETE CASCADE ON UPDATE CASCADE;

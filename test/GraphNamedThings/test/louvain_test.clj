@@ -1,6 +1,5 @@
 (ns GraphNamedThings.test.louvain_test
   (:require [GraphNamedThings.louvain :refer :all]
-            [GraphNamedThings.document :as document]
             [loom.graph]
             [loom.alg]
             [clojure.test :refer :all])
@@ -26,15 +25,6 @@
     [:9 :8 1]
     [:9 :10 4]
     [:3 :11 6]))
-
-(def props  (doto (java.util.Properties.)
-              (.put "annotators" "tokenize, ssplit, pos, lemma, ner, parse, dcoref")))
-
-(def pipeline (new StanfordCoreNLP props))
-
-(def doc-recs (document/create-document-records-split (range 8500 9500) pipeline 100))
-
-(def doc-graph (document/create-document-graph2 doc-recs))
 
 (deftest iterate-louvain-test
          (is (= (:adj (first (iterate-louvain g4)))

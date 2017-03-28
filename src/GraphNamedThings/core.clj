@@ -23,7 +23,7 @@
 
 (defn process-things [nlp-pipe batch-size]
   (loop []
-    (pc/process-things! nlp-pipe batch-size)
+    (pc/process-documents nlp-pipe batch-size)
     (recur)))
 
 (defn -main
