@@ -1,7 +1,9 @@
 (ns GraphNamedThings.louvain
   (:require [loom.graph]
             [loom.alg]
-            [clojure.math.combinatorics :as combo]))
+            [clojure.math.combinatorics :as combo]
+            [clojure.math.numeric-tower :as math]))
+
 
 (defn preexisting-comm-assignments
   [g c]
@@ -54,7 +56,20 @@
              (remove nil?))]
     (transduce xf + edge-combos)))
 
+(defn comm-modularity [g m c]
+  (let [ein (inside-connections-sum g c)
+        e m
+        eout (outside-connections-sum c g)]
+    (- (/ ein e)
+       (math/expt (/ (+ (* 2 ein) eout) (* 2 e)) 2))))
+
+(defn comm-modularities [g m cs]
+  (zipmap
+    (keys cs)
+    (map (partial comm-modularity g m) (vals cs))))
+
 (defn get-community-weight [g c i]
+  ;TODO: change to sum inside this function if possible
   "Edge weight between node i and community c"
   (-> (:adj g)
       (get i)
@@ -110,7 +125,7 @@
   [m k v]
   (update m k (fnil #(conj % v) '())))
 
-(defn community-recalc!
+(defn community-recalc
   [g i c1 c2 state]
   (let [c1-adjust (adjust-change-connection g (get (:comms @state) c1) i)
         c2-adjust (adjust-change-connection g (get (:comms @state) c2) i)]
@@ -131,14 +146,16 @@
        (/ (* ki-i sigtot)
           m))))
 
-(defn update-data-structures!
+(defn update-data-structures
   [g i cur-comm dQ-max state]
-  (community-recalc! g i cur-comm dQ-max state)
+  (community-recalc g i cur-comm dQ-max state)
   (swap! state assoc-in[:nodes i] dQ-max))
 
 (defn find-dQ-max
   [g m ki-i i cur-comm s-table comm-candidates]
-  (loop [max-item cur-comm max-val 0 comm-candidates comm-candidates]
+  (loop [max-item cur-comm
+         max-val 0
+         comm-candidates comm-candidates]
     (if (or (empty? comm-candidates)
             (nil? comm-candidates))
       max-item
@@ -157,7 +174,7 @@
       (if (not= dQ-max cur-comm)
         (do
           (swap! state assoc :modified? true)
-          (update-data-structures! g i cur-comm dQ-max state))))))
+          (update-data-structures g i cur-comm dQ-max state))))))
 
 (defn max-graph-modularity
   [g m node-index ki-table cs-node-vector]
@@ -189,4 +206,7 @@
           (println "Iterating graph...")
           (f-max-modularity state)
           (recur (inc iterations)))
-        (assoc @state :iterations iterations)))))
+        (-> @state
+            (assoc :graph g)
+            (assoc :qs (comm-modularities g m (:comms @state))))))))
+        ;(assoc @state :graph g)))))

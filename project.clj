@@ -23,7 +23,8 @@
                  [clatrix "0.5.0"]
                  [danlentz/clj-uuid "0.1.6"]
                  [cheshire "5.7.0"]
-                 [medley "0.8.4"]]
+                 [medley "0.8.4"]
+                 [org.clojure/math.numeric-tower "0.0.4"]]
   :main ^:skip-aot GraphNamedThings.core
   :target-path "target/%s"
   :jvm-opts ["-Xmx1600m"]

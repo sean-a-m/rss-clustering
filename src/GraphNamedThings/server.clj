@@ -16,7 +16,14 @@
 
 (defn request-documents [app-state]
   (respond
-    (ch/generate-string @app-state)))
+    (->> @app-state
+         (sort-by :score)
+         (reverse)
+         (map :articles)
+         (ch/generate-string))))
+
+  ;  (ch/generate-string
+  ;    @app-state)))
 
 (defn app-routes [app-state]
   (compojure.core/routes
