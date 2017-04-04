@@ -9,8 +9,17 @@
        (distinct
          (map :id_feed result)))))
 
-;(defn gen-result [articles modularity]
-(defn build-results [g comm-docs]
+(defn rank-articles [articles]
+  (let [ranked-articles (->> articles
+                             (sort-by :comm-weight)
+                             (reverse)
+                             (map-indexed #(assoc %2 :group-rank %1)))]
+    (flatten
+      (for [source-group (vals (group-by :id_feed ranked-articles))]
+        (map-indexed #(assoc %2 :source-rank %1) source-group)))))
+
+
+(defn add-article-weights [g comm-docs]
   (let [results (dbio/get-doc-out comm-docs)]
     (for [article results]
       (assoc article :comm-weight (reduce + (l/get-community-weight g comm-docs (:id article)))))))
@@ -22,7 +31,9 @@
           modularity (:qs l-results)
           g (:graph l-results)]
       (for [comm lcomms]
-        (let [result (build-results g (val comm))
+        (let [result (->> (val comm)
+                          (add-article-weights g)
+                          (rank-articles))
               ;result (dbio/get-doc-out (val comm))
               modularity (get modularity (key comm))]
           (let [score (get-score result modularity)]
