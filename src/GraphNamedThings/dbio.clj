@@ -94,15 +94,15 @@
   [id-list]
   (into {} (map #(vector (:id %) (doc-content %)) (docs-by-id id-list))))
 
-(defn get-entity-records [docids]
-  (let [bad-tags '("DATE" "NUMBER" "ORDINAL" "DURATION" "TIME" "PERCENT" "MONEY" "SET" "NULL")
-        bad-strings '("guardian" "reuters" "politico" "associated press" "ap" "getty" "getty images")]
-    (select namedentities
-            (fields :strings.entstring)
-            (where (and {:docid [in docids]}
-                        (not (in :tag bad-tags))
-                        (not (in :strings.entstring bad-strings))))
-            (join strings (= :strings.id :id)))))
+(defn get-entity-records [start end]
+  (exec-raw psqldb ["SELECT strings.entstring, strings.id, namedentities.docid, namedentities.tag
+                      FROM strings, namedentities
+                        WHERE strings.id = namedentities.id
+                        AND namedentities.tag NOT IN ('DATE','NUMBER','ORDINAL','DURATION','TIME','PERCENT','MONEY','SET','NULL')
+                        AND strings.entstring NOT IN ('guardian','reuters','associated press','ap','getty','getty images')
+                        AND namedentities.docid IN (SELECT id
+                                                      FROM entry
+                                                        WHERE date BETWEEN ? AND ?)" [start end]] :results))
 
 (defn write-entities [entity-records string-lists]
   (transaction

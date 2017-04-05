@@ -30,14 +30,15 @@
     (let [lcomms (:comms l-results)
           modularity (:qs l-results)
           g (:graph l-results)]
-      (for [comm lcomms]
-        (let [result (->> (val comm)
+      (pmap
+        #(let [result (->> (val %)
                           (add-article-weights g)
                           (rank-articles))
               ;result (dbio/get-doc-out (val comm))
-              modularity (get modularity (key comm))]
+              modularity (get modularity (key %))]
           (let [score (get-score result modularity)]
-            (hash-map :articles result :score score)))))))
+            (hash-map :articles result :score score)))
+        lcomms))))
 
 
 (defn update-results [app-state start-epoch end-epoch]
