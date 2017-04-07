@@ -39,9 +39,3 @@
 (defn create-feature-matrix [ent-recs]
   (recalc-svd-matrix (/ (count ent-recs) 2)
     (calculate-svd ent-recs)))
-
-
-
-
-
-

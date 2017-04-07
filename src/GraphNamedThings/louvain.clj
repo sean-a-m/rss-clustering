@@ -2,7 +2,8 @@
   (:require [loom.graph]
             [loom.alg]
             [clojure.math.combinatorics :as combo]
-            [clojure.math.numeric-tower :as math]))
+            [clojure.math.numeric-tower :as math]
+            [GraphNamedThings.config :as config]))
 
 
 (defn preexisting-comm-assignments
@@ -187,7 +188,6 @@
   [m entry]
   (update-in m (list (val entry)) (fnil #(conj % (key entry)) '())))
 
-;TODO: verify that maximum iteration limit is actually neccessary
 (defn iterate-louvain-modularity
   "Iterate until community vector no longer changes or max-iteration limit is reached"
   [pre-cs g]
@@ -198,7 +198,7 @@
         ki-table (build-ki-table g (keys node-index))
         f-max-modularity (partial max-graph-modularity g m node-index ki-table)
         state (atom {:comms cs :nodes node-index :i-weights s-table :modified? true})
-        limit 15]
+        limit config/iteration-limit]
     (loop [iterations 0]
       (if (and (:modified? @state)
                (> limit iterations))
@@ -209,4 +209,3 @@
         (-> @state
             (assoc :graph g)
             (assoc :qs (comm-modularities g m (:comms @state))))))))
-        ;(assoc @state :graph g)))))

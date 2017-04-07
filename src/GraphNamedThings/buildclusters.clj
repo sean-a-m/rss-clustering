@@ -1,13 +1,12 @@
 (ns GraphNamedThings.buildclusters
-  (:require [GraphNamedThings.dbio :as dbio]
+  (:require [GraphNamedThings.dbaccess :as dbio]
             [GraphNamedThings.louvain :as l]
             [GraphNamedThings.graphbuilder :as graphbuilder]
             ;[clmcll.mcl :as mcl]
             ;[louvainloom.louvain :as l]
             [GraphNamedThings.feature-matrix :as fm]
             [GraphNamedThings.kmeans :as kmeans]
-            [loom.graph :as graph])
-  (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]))
+            [loom.graph :as graph]))
 
 
 (defn kmeans-comms [start-epoch end-epoch]

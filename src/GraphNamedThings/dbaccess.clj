@@ -1,4 +1,4 @@
-(ns GraphNamedThings.dbio
+(ns GraphNamedThings.dbaccess
   (:require [korma.db :refer :all]
             [korma.core :refer :all]
             [clj-postgresql.core :as pg]
@@ -36,13 +36,6 @@
            (database mydb)
            (belongs-to namedentities)
            (entity-fields :id :entstring :count))
-
-;TODO: replace this with better table schema
-(defentity doc-source
-           (database mydb)
-           (table :entry)
-           (entity-fields :id :id_feed))
-
 
 (defn parse-html-fragment
   "Assumes the text is always part of the document body"
@@ -95,6 +88,7 @@
   (into {} (map #(vector (:id %) (doc-content %)) (docs-by-id id-list))))
 
 (defn get-entity-records [start end]
+  "Return all named entities ocurring between start and end date"
   (exec-raw psqldb ["SELECT strings.entstring, strings.id, namedentities.docid, namedentities.tag
                       FROM strings, namedentities
                         WHERE strings.id = namedentities.id
@@ -113,11 +107,7 @@
       (insert strings
               (values string-lists)))))
 
-(defn get-doc-sources [doc-ids]
-  (select doc-source
-          (where {:id [in doc-ids]})))
-
-(defn get-doc-out [doc-ids]
+(defn get-doc-summary [doc-ids]
   (let [prepared-stuff (clojure.string/join ", " (take (count doc-ids) (repeat "?::bigint")))
         query (str "WITH document_items AS (
                       WITH document_strings AS (
@@ -134,6 +124,7 @@
     (jdbc/query db2 stmnt)))
 
 (defn get-string-counts [strings]
+  "Get the number of ocurrences for each string in the list strings over all documents in the database"
   (let [prepared-stuff (clojure.string/join ", " (take (count strings) (repeat "?::text")))
         query (str "SELECT entstring, count(*)
                       FROM strings WHERE entstring IN (" prepared-stuff ")

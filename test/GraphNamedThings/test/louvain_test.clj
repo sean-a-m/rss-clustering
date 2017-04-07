@@ -2,8 +2,7 @@
   (:require [GraphNamedThings.louvain :refer :all]
             [loom.graph]
             [loom.alg]
-            [clojure.test :refer :all])
-  (import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]))
+            [clojure.test :refer :all]))
 
 ; https://www.cs.ucsb.edu/~xyan/classes/CS595D-2009winter/MCL_Presentation2.pdf pg 10
 

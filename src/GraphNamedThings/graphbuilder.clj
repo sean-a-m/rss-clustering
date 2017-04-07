@@ -1,7 +1,7 @@
 (ns GraphNamedThings.graphbuilder
   (:require [loom.alg]
             [medley.core :as me]
-            [GraphNamedThings.dbio :as dbio]
+            [GraphNamedThings.dbaccess :as dbio]
             [clojure.math.combinatorics :as combo]))
 
 (defn collect-multiples [ent-recs]
@@ -28,7 +28,7 @@
   (let [connected-sets (map set (connected-components ent-recs))]
     (pmap (partial collect-ents-on-strings ent-recs) connected-sets)))
 
-(defn connect-doc-set2
+(defn connect-doc-set
   [ent-recs]
   (combo/combinations
     (me/distinct-by :docid ent-recs) 2))
@@ -58,7 +58,7 @@
         total-count (reduce + (vals string-counts))]
     (->> ent-recs
          (connect-ents)
-         (mapcat connect-doc-set2)
+         (mapcat connect-doc-set)
          (map (partial build-vector-weight-pairs string-counts total-count))
          (group-by first)
          (map format-graph))))

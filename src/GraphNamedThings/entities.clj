@@ -1,13 +1,7 @@
 (ns GraphNamedThings.entities
-  (:require [GraphNamedThings.nlputil :as nlputil]
-            [GraphNamedThings.corenlpdefs :as nlpdefs]
+  (:require [GraphNamedThings.corenlpdefs :as nlpdefs]
             [clj-uuid :as uuid])
-  (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation]
-           [edu.stanford.nlp.ling CoreAnnotations$SentencesAnnotation CoreAnnotations$TokensAnnotation CoreAnnotations$PartOfSpeechAnnotation CoreAnnotations$TextAnnotation CoreAnnotations$CharacterOffsetBeginAnnotation CoreAnnotations$CharacterOffsetEndAnnotation]
-           [edu.stanford.nlp.hcoref CorefCoreAnnotations$CorefChainAnnotation]))
-
-;defines an entity derived from processing a document
-(defrecord entity [strings ner-tag])
+  (:import (edu.stanford.nlp.pipeline Annotation)))
 
 (defn contained-in-chain-id
   "Returns the chain id if the coreference chain contains the mention span"
@@ -85,7 +79,7 @@
 (defn get-entity-list
   "Process a document, returning a list of entity records"
   [doc-text pipe]
-  (let [annotation (nlputil/text-list-to-annotation doc-text)]
+  (let [annotation (new Annotation doc-text)]
     (do
       (. pipe annotate annotation)
         (println doc-text)

@@ -22,9 +22,6 @@
          (map :articles)
          (ch/generate-string))))
 
-  ;  (ch/generate-string
-  ;    @app-state)))
-
 (defn app-routes [app-state]
   (compojure.core/routes
     (GET "/" []

@@ -1,6 +1,6 @@
 (ns GraphNamedThings.recordprocessing
   (:require [GraphNamedThings.entities :as inputs]
-            [GraphNamedThings.dbio :as dbio]))
+            [GraphNamedThings.dbaccess :as dbio]))
 
 (defn build-entity-string-list [entity]
   "Build a list of entity strings from an entity record"

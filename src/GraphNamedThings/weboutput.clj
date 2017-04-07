@@ -1,7 +1,7 @@
 (ns GraphNamedThings.weboutput
   (:require [GraphNamedThings.buildclusters :as bc]
             [GraphNamedThings.louvain :as l]
-            [GraphNamedThings.dbio :as dbio]))
+            [GraphNamedThings.dbaccess :as dbaccess]))
 
 (defn get-score [result modularity]
   (* modularity
@@ -20,7 +20,7 @@
 
 
 (defn add-article-weights [g comm-docs]
-  (let [results (dbio/get-doc-out comm-docs)]
+  (let [results (dbaccess/get-doc-summary comm-docs)]
     (for [article results]
       (assoc article :comm-weight (reduce + (l/get-community-weight g comm-docs (:id article)))))))
 
@@ -34,7 +34,6 @@
         #(let [result (->> (val %)
                           (add-article-weights g)
                           (rank-articles))
-              ;result (dbio/get-doc-out (val comm))
               modularity (get modularity (key %))]
           (let [score (get-score result modularity)]
             (hash-map :articles result :score score)))
@@ -42,7 +41,7 @@
 
 
 (defn update-results [app-state start-epoch end-epoch]
-  (let [new-ids (into #{} (map :id (dbio/processed-docs-from-time-range start-epoch end-epoch))) ;TODO: Replace with query that only retreives IDs
+  (let [new-ids (into #{} (map :id (dbaccess/processed-docs-from-time-range start-epoch end-epoch)))
         cur-ids (into #{} (map :id (flatten @app-state)))]
     (println "Getting docs between " start-epoch "and " end-epoch)
     (if (not= new-ids cur-ids)

@@ -5,7 +5,7 @@
             [clj-time.core :as t]
             [clj-time.coerce :as coerce]
             [GraphNamedThings.config :as config])
-  (:import [edu.stanford.nlp pipeline.StanfordCoreNLP pipeline.Annotation])
+  (:import (edu.stanford.nlp.pipeline StanfordCoreNLP))
   (:gen-class))
 
 (defn update-response
@@ -13,7 +13,8 @@
   [app-state]
   (loop []
     (let [start-epoch (coerce/to-epoch
-                        (t/ago (t/hours 24)))
+                        (t/ago
+                          (t/hours 24)))
           end-epoch (coerce/to-epoch
                       (t/now))]
 
@@ -31,11 +32,11 @@
   [& args]
   (let [props (doto (java.util.Properties.)
                 (.put "annotators" "tokenize, ssplit, pos, lemma, ner, parse, dcoref")
-                (.put "threads" 2)
+                (.put "threads" config/corenlp-threads)
                 (.put "timeout" 30000))
         nlp-pipe (new StanfordCoreNLP props)
         app-state (atom nil)]
-    (future (process-things nlp-pipe 1))
+    (future (process-things nlp-pipe config/corenlp-batch-size))
     (future (update-response app-state))
     (future (server/runserver app-state))))
 

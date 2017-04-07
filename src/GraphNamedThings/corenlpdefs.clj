@@ -1,53 +1,50 @@
 (ns GraphNamedThings.corenlpdefs
-    (:import [edu.stanford.nlp.ling CoreAnnotations$SentencesAnnotation CoreAnnotations$TokensAnnotation CoreAnnotations$PartOfSpeechAnnotation CoreAnnotations$TextAnnotation CoreAnnotations$CharacterOffsetBeginAnnotation CoreAnnotations$CharacterOffsetEndAnnotation]))
-;Definitions for retrieving various items from corenlp annotation
-
-(def corenlp-sentence edu.stanford.nlp.ling.CoreAnnotations$SentencesAnnotation)
-(def corenlp-coref edu.stanford.nlp.hcoref.CorefCoreAnnotations$CorefChainAnnotation)
-(def corenlp-token edu.stanford.nlp.ling.CoreAnnotations$TokensAnnotation)
-(def corenlp-netag edu.stanford.nlp.ling.CoreAnnotations$NamedEntityTagAnnotation)
-(def corenlp-text edu.stanford.nlp.ling.CoreAnnotations$TextAnnotation)
-(def corenlp-sent-index edu.stanford.nlp.ling.CoreAnnotations$SentenceIndexAnnotation)
-(def corenlp-word-index edu.stanford.nlp.ling.CoreAnnotations$IndexAnnotation)
-(def corenlp-char-offset-begin edu.stanford.nlp.ling.CoreAnnotations$CharacterOffsetBeginAnnotation)
-(def corenlp-char-offset-end edu.stanford.nlp.ling.CoreAnnotations$CharacterOffsetEndAnnotation)
+  (:import (edu.stanford.nlp.ling CoreAnnotations$SentencesAnnotation
+                                  CoreAnnotations$TokensAnnotation
+                                  CoreAnnotations$TextAnnotation
+                                  CoreAnnotations$CharacterOffsetBeginAnnotation
+                                  CoreAnnotations$CharacterOffsetEndAnnotation
+                                  CoreAnnotations$SentenceIndexAnnotation
+                                  CoreAnnotations$IndexAnnotation
+                                  CoreAnnotations$NamedEntityTagAnnotation)
+           (edu.stanford.nlp.hcoref CorefCoreAnnotations$CorefChainAnnotation)))
 
 (defn get-sentences
   [annotated]
-  (.get annotated corenlp-sentence))
+  (.get annotated CoreAnnotations$SentencesAnnotation))
 
 (defn get-corefs
   [annotated]
-  (.get annotated corenlp-coref))
+  (.get annotated CorefCoreAnnotations$CorefChainAnnotation))
 
 (defn get-tokens
   [annotated]
-  (.get annotated corenlp-token))
+  (.get annotated CoreAnnotations$TokensAnnotation))
 
 (defn get-ner-tag
   [token]
-  (.get token corenlp-netag))
+  (.get token CoreAnnotations$NamedEntityTagAnnotation))
 
 (defn get-words
   [any]
-  (.get any corenlp-text))
+  (.get any CoreAnnotations$TextAnnotation))
 
 (defn get-sentence-index
   [token]
   (inc
-    (.get token corenlp-sent-index)))
+    (.get token CoreAnnotations$SentenceIndexAnnotation)))
 
 (defn get-word-index
   [token]
-    (.get token corenlp-word-index))
+    (.get token CoreAnnotations$IndexAnnotation))
 
 (defn get-token-start-offset
   [token]
-  (.get token corenlp-char-offset-begin))
+  (.get token CoreAnnotations$CharacterOffsetBeginAnnotation))
 
 (defn get-token-end-offset
   [token]
-  (.get token corenlp-char-offset-end))
+  (.get token CoreAnnotations$CharacterOffsetEndAnnotation))
 
 (defn ner-list [processed]
   (map get-ner-tag

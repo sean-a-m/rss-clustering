@@ -1,6 +1,6 @@
 (ns GraphNamedThings.processdata
   (:require [GraphNamedThings.recordprocessing :as processing]
-            [GraphNamedThings.dbio :as dbio]))
+            [GraphNamedThings.dbaccess :as dbio]))
 
 (defn process-next-document-set [nlp-pipe batch-size]
   (let [doc-ids (map :id (dbio/select-newest-unprocessed batch-size))]
