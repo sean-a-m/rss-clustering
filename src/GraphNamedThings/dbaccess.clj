@@ -3,7 +3,8 @@
             [korma.core :refer :all]
             [clj-postgresql.core :as pg]
             [clojure.java.jdbc :as jdbc]
-            [GraphNamedThings.config :as config])
+            [GraphNamedThings.config :as config]
+            [medley.core :as me])
   (:import org.jsoup.Jsoup))
 
 (def psqldb
@@ -59,14 +60,21 @@
           (limit batch-size)
           (order :id :DESC)))
 
+(defn- get-distinct-entries [entries]
+  "Because some of the documents in the database are the same thing with different URLs, this will try to filter those if
+  based on having identical titles and content."
+  ;TODO: consider what happens if this is used over long time ranges
+  (me/distinct-by #(select-keys % [:title :content :scrape]) entries))
+
 (defn processed-docs-from-time-range
   "Time is epoch in  frss table"
   [start-time end-time]
-  (select entry
-          (where {:date [between [start-time end-time]]
-                  :id_feed [in config/selected-feed-ids]
-                  :text_processed true
-                  :process_success true})))
+  (get-distinct-entries
+    (select entry
+            (where {:date [between [start-time end-time]]
+                    :id_feed [in config/selected-feed-ids]
+                    :text_processed true
+                    :process_success true}))))
 
 (defn log-result
   [doc-id success?]

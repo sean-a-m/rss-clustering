@@ -39,7 +39,6 @@
             (hash-map :articles result :score score)))
         lcomms))))
 
-
 (defn update-results [app-state start-epoch end-epoch]
   (let [new-ids (into #{} (map :id (dbaccess/processed-docs-from-time-range start-epoch end-epoch)))
         cur-ids (into #{} (map :id (flatten @app-state)))]
