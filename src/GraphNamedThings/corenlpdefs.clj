@@ -7,7 +7,7 @@
                                   CoreAnnotations$SentenceIndexAnnotation
                                   CoreAnnotations$IndexAnnotation
                                   CoreAnnotations$NamedEntityTagAnnotation)
-           (edu.stanford.nlp.hcoref CorefCoreAnnotations$CorefChainAnnotation)))
+           (edu.stanford.nlp.coref CorefCoreAnnotations$CorefChainAnnotation)))
 
 (defn get-sentences
   [annotated]
