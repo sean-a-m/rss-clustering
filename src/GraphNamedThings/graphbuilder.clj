@@ -35,7 +35,8 @@
 
 (defn build-vector-weight-pairs [string-counts total-count entity-pair]
   ;TODO: calculate total in this function
-  (let [[first-ent second-ent] entity-pair]
+  (let [[first-ent second-ent] entity-pair
+        total-count (Math/sqrt total-count)]
     (vector
       (into #{}
             (list
