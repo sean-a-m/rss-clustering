@@ -6,7 +6,16 @@
             ;[louvainloom.louvain :as l]
             [GraphNamedThings.feature-matrix :as fm]
             [GraphNamedThings.kmeans :as kmeans]
-            [loom.graph :as graph]))
+            [GraphNamedThings.util :as util]
+            [loom.graph :as graph]
+            [medley.core :as me]))
+
+(defn- get-distinct [entity-records]
+  ;FIXME: this should be done before retrieving the records from the database
+  (let [distinct-ids (-> entity-records
+                               (me/distinct-by #(select-keys % [:title :content :scrape]))
+                               (map :docid))]
+        (filter #(util/in? % distinct-ids) entity-records)))
 
 
 (defn kmeans-comms [start-epoch end-epoch]
@@ -24,6 +33,7 @@
   (let [records (dbio/get-entity-records start-epoch end-epoch)]
     (println "Generating new cluster...")
     (->> records
+         (get-distinct)
          (graphbuilder/connect-docs)
          (apply graph/weighted-graph)
          (l/iterate-louvain-modularity '()))))

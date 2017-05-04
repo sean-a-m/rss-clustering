@@ -60,21 +60,14 @@
           (limit batch-size)
           (order :id :DESC)))
 
-(defn- get-distinct-entries [entries]
-  "Because some of the documents in the database are the same thing with different URLs, this will try to filter those if
-  based on having identical titles and content."
-  ;TODO: consider what happens if this is used over long time ranges
-  (me/distinct-by #(select-keys % [:title :content :scrape]) entries))
-
 (defn processed-docs-from-time-range
   "Time is epoch in  frss table"
   [start-time end-time]
-  (get-distinct-entries
     (select entry
             (where {:date [between [start-time end-time]]
                     :id_feed [in config/selected-feed-ids]
                     :text_processed true
-                    :process_success true}))))
+                    :process_success true})))
 
 (defn log-result
   [doc-id success?]
@@ -96,10 +89,12 @@
   (into {} (map #(vector (:id %) (doc-content %)) (docs-by-id id-list))))
 
 (defn get-entity-records [start end]
+  ;FIXME: entry.content and entry.scrape are in this query to help filter documents by unique content, but this should be done before retreiving entity records
   "Return all named entities ocurring between start and end date"
-  (exec-raw psqldb ["SELECT strings.entstring, strings.id, namedentities.docid, namedentities.tag
+  (exec-raw psqldb ["SELECT strings.entstring, strings.id, namedentities.docid, namedentities.tag, entry.content, entry.scrape
                       FROM strings, namedentities
                         WHERE strings.id = namedentities.id
+                          AND namedentities.docid = entry.id
                         AND namedentities.tag NOT IN ('DATE','NUMBER','ORDINAL','DURATION','TIME','PERCENT','MONEY','SET','NULL')
                         AND strings.entstring NOT IN ('guardian','reuters','associated press','ap','getty','getty images')
                         AND namedentities.docid IN (SELECT id
