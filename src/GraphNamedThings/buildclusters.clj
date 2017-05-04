@@ -15,7 +15,7 @@
   (let [distinct-ids (-> entity-records
                                (me/distinct-by #(select-keys % [:title :content :scrape]))
                                (map :docid))]
-        (filter #(util/in? % distinct-ids) entity-records)))
+        (filter #(util/in? (:docid %) distinct-ids) entity-records)))
 
 
 (defn kmeans-comms [start-epoch end-epoch]
