@@ -40,14 +40,9 @@
             (hash-map :articles result :score score)))
         lcomms))))
 
-(defn get-distinct-entries [entries]
-  "Because some of the documents in the database are the same thing with different URLs, this will try to filter those if
-  based on having identical titles and content."
-  ;TODO: consider what happens if this is used over long time ranges
-  (me/distinct-by #(select-keys % [:title :content :scrape]) entries))
 
 (defn update-results [app-state start-epoch end-epoch]
-  (let [new-ids (into #{} (map :id (get-distinct-entries (dbaccess/processed-docs-from-time-range start-epoch end-epoch))))
+  (let [new-ids (into #{} (map :id (dbaccess/processed-docs-from-time-range start-epoch end-epoch)))
         cur-ids (into #{} (map :id (flatten @app-state)))]
     (println "Getting docs between " start-epoch "and " end-epoch)
     (if (not= new-ids cur-ids)
