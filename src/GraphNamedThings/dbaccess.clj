@@ -112,18 +112,17 @@
 
 (defn get-doc-summary [doc-ids]
   (let [prepared-stuff (clojure.string/join ", " (take (count doc-ids) (repeat "?::bigint")))
-        query (str "WITH document_items AS (
-                      WITH document_strings AS (
-                        SELECT namedentities.docid, array_agg(strings.entstring)
-                          FROM namedentities, strings
-                            WHERE namedentities.id = strings.id AND namedentities.docid IN (" prepared-stuff ")
-                            AND NOT namedentities.tag IN ('DATE', 'NUMBER', 'ORDINAL', 'DURATION', 'TIME', 'PERCENT', 'MONEY')
-                            GROUP BY namedentities.docid)
-                      SELECT entry.id, entry.title, entry.link, entry.date, entry.id_feed, source_feeds.id AS source_id, document_strings.array_agg
-                        FROM entry, document_strings, source_feeds
-                        WHERE document_strings.docid=entry.id
-                        AND entry.id_feed = source_feeds.id_feed)
-                    SELECT * FROM document_items")
+        query (str "WITH document_strings AS (
+                      SELECT namedentities.docid, array_agg(strings.entstring)
+                        FROM namedentities, strings
+                          WHERE namedentities.id = strings.id AND namedentities.docid IN (" prepared-stuff ")
+                          AND NOT namedentities.tag IN ('DATE', 'NUMBER', 'ORDINAL', 'DURATION', 'TIME', 'PERCENT', 'MONEY')
+                          GROUP BY namedentities.docid)
+                    SELECT entry.id, entry.title, entry.link, entry.date, entry.id_feed, source_feeds.id AS source_id, sources.source_name, document_strings.array_agg
+                      FROM entry, document_strings, source_feeds, sources
+                      WHERE document_strings.docid=entry.id
+                        AND entry.id_feed = source_feeds.id_feed
+                        AND source_feeds.id = sources.id")
         stmnt (apply vector query doc-ids)]
     (jdbc/query db2 stmnt)))
 
