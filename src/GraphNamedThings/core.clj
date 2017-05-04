@@ -8,22 +8,18 @@
   (:import (edu.stanford.nlp.pipeline StanfordCoreNLP))
   (:gen-class))
 
-(defn update-response
+(defn update-clusters
   "Repeatedly update the document clusters returned by the server"
   [app-state]
   (loop []
-    (let [start-epoch (coerce/to-epoch
-                        (t/ago
-                          (t/hours 24)))
-          end-epoch (coerce/to-epoch
-                      (t/now))]
-
+    (let [start-epoch (-> (t/hours 24) t/ago coerce/to-epoch)
+          end-epoch (coerce/to-epoch (t/now))]
       (println "Updating results")
       (webout/update-results app-state start-epoch end-epoch)
       (Thread/sleep config/update-delay))
       (recur)))
 
-(defn process-things [nlp-pipe batch-size]
+(defn document-processor [nlp-pipe batch-size]
   (loop []
     (pc/process-documents nlp-pipe batch-size)
     (recur)))
@@ -36,8 +32,8 @@
                 (.put "timeout" 30000))
         nlp-pipe (new StanfordCoreNLP props)
         app-state (atom nil)]
-    (future (process-things nlp-pipe config/corenlp-batch-size))
-    (future (update-response app-state))
-    (future (server/runserver app-state))))
+    (future (document-processor nlp-pipe config/corenlp-batch-size))
+    (future (update-clusters app-state))
+    (future (server/run-server app-state))))
 
 

@@ -27,6 +27,6 @@
     (GET "/" []
       (request-documents app-state))))
 
-(defn runserver [app-state]
+(defn run-server [app-state]
   (http/run-server
     (handler/site (app-routes app-state)) {:port 9002}))
