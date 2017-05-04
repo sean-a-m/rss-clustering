@@ -52,7 +52,6 @@ CREATE TABLE sources
   scrape BOOLEAN NOT NULL DEFAULT false,
   lang TEXT DEFAULT 'en',
   website TEXT,
-
 );
 
-ALTER TABLE entry ADD FOREIGN KEY (id_feed) REFERENCES source_feeds (id_feed)
+ALTER TABLE entry ADD FOREIGN KEY (id_feed) REFERENCES source_feeds (id_feed);

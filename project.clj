@@ -4,8 +4,8 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
-                 [edu.stanford.nlp/stanford-corenlp "3.6.0"]
-                 [edu.stanford.nlp/stanford-corenlp "3.6.0" :classifier "models-english"]
+                 [edu.stanford.nlp/stanford-corenlp "3.7.0"]
+                 [edu.stanford.nlp/stanford-corenlp "3.7.0" :classifier "models-english"]
                  [aysylu/loom "0.5.4"]
                  [org.jsoup/jsoup "1.9.1"]
                  [net.mikera/core.matrix "0.52.2"]

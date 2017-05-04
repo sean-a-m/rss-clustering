@@ -1,7 +1,8 @@
 (ns GraphNamedThings.weboutput
   (:require [GraphNamedThings.buildclusters :as bc]
             [GraphNamedThings.louvain :as l]
-            [GraphNamedThings.dbaccess :as dbaccess]))
+            [GraphNamedThings.dbaccess :as dbaccess]
+            [medley.core :as me]))
 
 (defn get-score [result modularity]
   (* modularity
