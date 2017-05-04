@@ -15,11 +15,12 @@
                              (reverse)
                              (map-indexed #(assoc %2 :group-rank %1)))]
     (flatten
-      (for [source-group (vals (group-by :id_feed ranked-articles))]
+      (for [source-group (vals (group-by :source_id ranked-articles))]
         (map-indexed #(assoc %2 :source-rank %1) source-group)))))
 
 
 (defn add-article-weights [g comm-docs]
+  ;TODO: retrieving all of the article data should be somewhere more obvious
   (let [results (dbaccess/get-doc-summary comm-docs)]
     (for [article results]
       (assoc article :comm-weight (reduce + (l/get-community-weight g comm-docs (:id article)))))))
@@ -38,7 +39,6 @@
           (let [score (get-score result modularity)]
             (hash-map :articles result :score score)))
         lcomms))))
-
 
 (defn update-results [app-state start-epoch end-epoch]
   (let [new-ids (into #{} (map :id (dbaccess/processed-docs-from-time-range start-epoch end-epoch)))

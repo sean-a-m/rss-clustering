@@ -34,7 +34,25 @@ CREATE TABLE entry
   process_success BOOLEAN,
   CONSTRAINT entry_pkey PRIMARY KEY (id),
   CONSTRAINT aconstraint UNIQUE (rowid)
-)
+);
 
 CREATE INDEX entry_date_idx ON entry (date);
 
+CREATE TABLE source_feeds
+(
+  id UUID PRIMARY KEY,
+  id_feed smallint
+);
+
+CREATE TABLE sources
+(
+  id UUID references source_relations (id) ON DELETE CASCADE ON UPDATE CASCADE,
+  source_name TEXT NOT NULL,
+  use_results BOOLEAN NOT NULL DEFAULT false,
+  scrape BOOLEAN NOT NULL DEFAULT false,
+  lang TEXT DEFAULT 'en',
+  website TEXT,
+
+);
+
+ALTER TABLE entry ADD FOREIGN KEY (id_feed) REFERENCES source_feeds (id_feed)
