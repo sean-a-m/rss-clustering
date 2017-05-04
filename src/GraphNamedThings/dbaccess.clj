@@ -92,7 +92,7 @@
   ;FIXME: entry.content and entry.scrape are in this query to help filter documents by unique content, but this should be done before retreiving entity records
   "Return all named entities ocurring between start and end date"
   (exec-raw psqldb ["SELECT strings.entstring, strings.id, namedentities.docid, namedentities.tag, entry.content, entry.scrape
-                      FROM strings, namedentities
+                      FROM strings, namedentities, entry
                         WHERE strings.id = namedentities.id
                           AND namedentities.docid = entry.id
                         AND namedentities.tag NOT IN ('DATE','NUMBER','ORDINAL','DURATION','TIME','PERCENT','MONEY','SET','NULL')
