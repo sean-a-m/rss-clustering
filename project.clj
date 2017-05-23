@@ -16,6 +16,7 @@
                  [clj-time "0.12.0"]
                  [http-kit "2.1.18"]
                  [ring/ring-json "0.4.0"]
+                 [ring/ring-defaults "0.2.1"]
                  [compojure "1.5.1"]
                  [javax.servlet/javax.servlet-api "3.1.0"]
                  [clj-postgresql "0.4.0"]
@@ -24,7 +25,8 @@
                  [danlentz/clj-uuid "0.1.6"]
                  [cheshire "5.7.0"]
                  [medley "0.8.4"]
-                 [org.clojure/math.numeric-tower "0.0.4"]]
+                 [org.clojure/math.numeric-tower "0.0.4"]
+                 [prismatic/schema "1.1.3"]]
   :main ^:skip-aot GraphNamedThings.core
   :target-path "target/%s"
   :jvm-opts ["-Xmx1600m"]

@@ -25,3 +25,6 @@
 
 ;iteration limit for clustering
 (def iteration-limit 15)
+
+;default items requested per page
+(def perpage 10)
