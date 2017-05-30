@@ -7,13 +7,23 @@
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
             [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
             [GraphNamedThings.config :as config]
-            [GraphNamedThings.schema :as sc]))
+            [GraphNamedThings.schema :as sc]
+            [GraphNamedThings.dbaccess :as db]))
 
 (defn- paginate [perpage page coll]
   (let [perpage (or perpage config/perpage)
         page (or page 0)
         partitioned (partition-all perpage coll)]
     (nth partitioned page nil)))
+
+(defn assoc-term-scores [app-state]
+  (for [cluster app-state]
+    (let [terms (flatten
+                  (map :array_agg (:articles cluster)))
+          dterms (distinct terms)
+          tfs (frequencies terms)
+          dfs (reduce #(assoc %1 (:entstring %2) (:count %2)) {} (db/get-string-counts dterms))]
+      (reduce #(assoc %1 %2 (Math/sqrt (/ (get tfs %2) (get dfs %2)))) {} dterms))))
 
 (defn respond [resp]
   {:status 200
