@@ -27,4 +27,7 @@
 (def iteration-limit 15)
 
 ;default items requested per page
-(def perpage 10)
+(def articles-per-page 10)
+
+;default items requested per page on related articles page
+(def rel-articles-per-page 10)

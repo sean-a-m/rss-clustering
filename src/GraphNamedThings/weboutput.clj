@@ -2,7 +2,8 @@
   (:require [GraphNamedThings.buildclusters :as bc]
             [GraphNamedThings.louvain :as l]
             [GraphNamedThings.dbaccess :as dbaccess]
-            [medley.core :as me]))
+            [medley.core :as me]
+            [clj-uuid :as uuid]))
 
 (defn get-score [result modularity]
   (* modularity
@@ -32,14 +33,14 @@
     (let [lcomms (:comms l-results)
           modularity (:qs l-results)
           g (:graph l-results)]
-      (pmap
-        #(let [result (->> (val %)
-                          (add-article-weights g)
-                          (rank-articles))
-              modularity (get modularity (key %))]
-          (let [score (get-score result modularity)]
-            (hash-map :articles result :score score)))
-        lcomms))))
+        (pmap
+          #(let [result (->> (val %)
+                            (add-article-weights g)
+                            (rank-articles))
+                modularity (get modularity (key %))]
+            (let [score (get-score result modularity)]
+              (hash-map :articles result :score score :id (uuid/v4))))
+          lcomms))))
 
 (defn update-results [article-clusters start-epoch end-epoch]
   (let [new-ids (into #{} (map :id (dbaccess/processed-docs-from-time-range start-epoch end-epoch)))

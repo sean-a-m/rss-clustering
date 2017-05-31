@@ -135,3 +135,21 @@
         stmnt (apply vector query strings)]
     (jdbc/query db2 stmnt)))
 
+(defn related-article-ids [terms time-before limit offset]
+  "TODO: Take into account term coreferences"
+  (let [prepared-stuff (clojure.string/join ", " (take (count terms) (repeat "?::text")))
+        query (str  "WITH sorted_docs AS (
+                      SELECT namedentities.docid, COUNT(*) FROM namedentities, strings
+                        WHERE strings.entstring IN (" prepared-stuff ")
+                        AND strings.id = namedentities.id
+                      GROUP BY namedentities.docid
+                      ORDER BY count DESC)
+                    SELECT sorted_docs.docid FROM sorted_docs, entry
+                      WHERE sorted_docs.docid = entry.id
+                      AND entry.date < ?::bigint
+                    LIMIT ?::int OFFSET ?::int")
+        stmnt (apply vector query (flatten (conj (list time-before limit offset) terms)))] ;FIXME: ugly
+    (println stmnt)
+    (jdbc/query db2 stmnt)))
+
+
