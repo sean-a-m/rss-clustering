@@ -16,8 +16,8 @@
         partitioned (partition-all perpage coll)]
     (nth partitioned page nil)))
 
-(defn assoc-term-scores [app-state]
-  (for [cluster app-state]
+(defn assoc-term-scores [article-clusters]
+  (for [cluster article-clusters]
     (let [terms (flatten
                   (map :array_agg (:articles cluster)))
           dterms (distinct terms)
@@ -31,26 +31,26 @@
              "Access-Control-Allow-Origin" "*"}
    :body resp})
 
-(defn request-documents [app-state page perpage]
+(defn request-documents [article-clusters page perpage]
   (respond
-    (->> @app-state
+    (->> @article-clusters
          (sort-by :score)
          (reverse)
          (map :articles)
          (paginate perpage page))))
 
-(defn app-routes [app-state]
+(defn app-routes [article-clusters]
   (compojure.core/routes
 
     (GET "/" [:as r]
       (let [params (sc/cluster-coercer (:params r))]
         (println (:params r))
         (println params)
-        (request-documents app-state (:page params) (:perpage params))))))
+        (request-documents article-clusters (:page params) (:perpage params))))))
 
-(defn run-server [app-state]
+(defn run-server [article-clusters]
   (http/run-server
-    (-> (handler/site (app-routes app-state))
+    (-> (handler/site (app-routes article-clusters))
         (wrap-json-body {:keywords? true})
         (wrap-json-response))
     {:port 9002}))

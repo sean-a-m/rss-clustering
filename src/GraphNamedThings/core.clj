@@ -10,12 +10,12 @@
 
 (defn update-clusters
   "Repeatedly update the document clusters returned by the server"
-  [app-state]
+  [article-clusters]
   (loop []
     (let [start-epoch (-> (t/hours 24) t/ago coerce/to-epoch)
           end-epoch (coerce/to-epoch (t/now))]
       (println "Updating results")
-      (webout/update-results app-state start-epoch end-epoch)
+      (webout/update-results article-clusters start-epoch end-epoch)
       (Thread/sleep config/update-delay))
       (recur)))
 
@@ -31,9 +31,9 @@
                 (.put "threads" config/corenlp-threads)
                 (.put "timeout" 30000))
         nlp-pipe (new StanfordCoreNLP props)
-        app-state (atom nil)]
+        article-clusters (atom nil)]
     (future (document-processor nlp-pipe config/corenlp-batch-size))
-    (future (update-clusters app-state))
-    (future (server/run-server app-state))))
+    (future (update-clusters article-clusters))
+    (future (server/run-server article-clusters))))
 
 

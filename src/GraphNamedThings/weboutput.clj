@@ -41,11 +41,11 @@
             (hash-map :articles result :score score)))
         lcomms))))
 
-(defn update-results [app-state start-epoch end-epoch]
+(defn update-results [article-clusters start-epoch end-epoch]
   (let [new-ids (into #{} (map :id (dbaccess/processed-docs-from-time-range start-epoch end-epoch)))
-        cur-ids (into #{} (map :id (flatten @app-state)))]
+        cur-ids (into #{} (map :id (flatten @article-clusters)))]
     (println "Getting docs between " start-epoch "and " end-epoch)
     (if (not= new-ids cur-ids)
       (doall
-        (reset! app-state (gen-results start-epoch end-epoch)))
-      app-state)))
+        (reset! article-clusters (gen-results start-epoch end-epoch)))
+      article-clusters)))
