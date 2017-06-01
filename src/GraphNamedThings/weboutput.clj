@@ -49,4 +49,5 @@
     (if (not= new-ids cur-ids)
       (doall
         (reset! article-clusters (gen-results start-epoch end-epoch)))
-      article-clusters)))
+      ((println "No new articles found")
+       article-clusters))))

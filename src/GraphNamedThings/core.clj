@@ -14,10 +14,12 @@
   (loop []
     (let [start-epoch (-> (t/hours 24) t/ago coerce/to-epoch)
           end-epoch (coerce/to-epoch (t/now))]
-      (println "Updating results")
-      (webout/update-results article-clusters start-epoch end-epoch)
-      (Thread/sleep config/update-delay))
-      (recur)))
+      (try
+        (println "Updating results")
+        (webout/update-results article-clusters start-epoch end-epoch)
+        (catch Exception e (println "Exception: " (.getMessage e))))
+        (Thread/sleep config/update-delay)
+      (recur))))
 
 (defn document-processor [nlp-pipe batch-size]
   (loop []

@@ -149,7 +149,6 @@
                       AND entry.date < ?::bigint
                     LIMIT ?::int OFFSET ?::int")
         stmnt (apply vector query (flatten (conj (list time-before limit offset) terms)))] ;FIXME: ugly
-    (println stmnt)
     (jdbc/query db2 stmnt)))
 
 

@@ -10,6 +10,7 @@
             [GraphNamedThings.schema :as sc]
             [GraphNamedThings.dbaccess :as db]
             [clj-time.core :as t]
+            [clj-uuid :as uuid]
             [clj-time.coerce :as coerce]))
 
 (defn- paginate [perpage page coll]
@@ -37,10 +38,11 @@
 (defn get-related-articles [article-clusters cluster-uuid limit offset]
   (let [cluster (first (filter #(= (:id %) cluster-uuid) @article-clusters))
         search-terms (above-avg-terms cluster)
-        epoch-cutoff (-> (t/hours 24) t/ago coerce/to-epoch)]
+        epoch-cutoff (-> (t/hours 24) t/ago coerce/to-epoch)
+        related-article-ids (db/related-article-ids search-terms epoch-cutoff limit offset)]
     ;TODO: time should be based on data from article-clusters and not system time
     (db/get-doc-summary
-      (map :docid (db/related-article-ids search-terms epoch-cutoff limit offset)))))
+      (map :docid related-article-ids))))
 
 (defn respond [resp]
   {:status 200
@@ -53,7 +55,6 @@
     (->> @article-clusters
          (sort-by :score)
          (reverse)
-         (map :articles)
          (paginate perpage page))))
 
 (defn app-routes [article-clusters]
@@ -66,7 +67,7 @@
     (GET "/related" [:as r]
       (let [params (sc/related (:params r))]
         (get-related-articles article-clusters
-                              (:id params)
+                              (uuid/as-uuid (:id params))
                               (or (:page params) 0)
                               (or (:perpage params) config/rel-articles-per-page))))))
 
