@@ -46,8 +46,7 @@
 
 (defn respond [resp]
   {:status 200
-   :headers {"Content-Type" "application/json"
-             "Access-Control-Allow-Origin" "*"}
+   :headers {"Content-Type" "application/json"}
    :body resp})
 
 (defn request-documents [article-clusters page perpage]
