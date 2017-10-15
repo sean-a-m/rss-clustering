@@ -8,7 +8,11 @@
             [GraphNamedThings.kmeans :as kmeans]
             [GraphNamedThings.util :as util]
             [loom.graph :as graph]
-            [medley.core :as me]))
+            [medley.core :as me]
+            [taoensso.timbre :as timbre
+             :refer [log  trace  debug  info  warn  error  fatal  report
+                     logf tracef debugf infof warnf errorf fatalf reportf
+                     spy get-env]]))
 
 (defn get-distinct [entity-records]
   ;FIXME: this should be done before retrieving the records from the database
@@ -31,7 +35,7 @@
 
 (defn louvain-comms [start-epoch end-epoch]
   (let [records (dbio/get-entity-records start-epoch end-epoch)]
-    (println "Generating new cluster...")
+    (info "Generating new cluster...")
     (->> records
          (get-distinct)
          (graphbuilder/connect-docs)

@@ -3,7 +3,11 @@
             [GraphNamedThings.louvain :as l]
             [GraphNamedThings.dbaccess :as dbaccess]
             [medley.core :as me]
-            [clj-uuid :as uuid]))
+            [clj-uuid :as uuid]
+            [taoensso.timbre :as timbre
+             :refer [log  trace  debug  info  warn  error  fatal  report
+                     logf tracef debugf infof warnf errorf fatalf reportf
+                     spy get-env]]))
 
 (defn get-score [result modularity]
   (* modularity
@@ -45,9 +49,9 @@
 (defn update-results [article-clusters start-epoch end-epoch]
   (let [new-ids (into #{} (map :id (dbaccess/processed-docs-from-time-range start-epoch end-epoch)))
         cur-ids (into #{} (map :id (flatten @article-clusters)))]
-    (println "Getting docs between " start-epoch "and " end-epoch)
+    (info "Getting docs between " start-epoch "and " end-epoch)
     (if (not= new-ids cur-ids)
       (doall
         (reset! article-clusters (gen-results start-epoch end-epoch)))
-      ((println "No new articles found")
+      ((info "No new articles found")
        article-clusters))))

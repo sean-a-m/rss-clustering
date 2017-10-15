@@ -1,6 +1,10 @@
 (ns GraphNamedThings.entities
   (:require [GraphNamedThings.corenlpdefs :as nlpdefs]
-            [clj-uuid :as uuid])
+            [clj-uuid :as uuid]
+            [taoensso.timbre :as timbre
+             :refer [log  trace  debug  info  warn  error  fatal  report
+                     logf tracef debugf infof warnf errorf fatalf reportf
+                     spy get-env]])
   (:import (edu.stanford.nlp.pipeline Annotation)))
 
 (defn contained-in-chain-id
@@ -82,7 +86,7 @@
   (let [annotation (new Annotation doc-text)]
     (do
       (. pipe annotate annotation)
-        (println doc-text)
+        (info doc-text)
         (get-document-entities-new annotation))))
 
 

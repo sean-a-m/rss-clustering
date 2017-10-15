@@ -26,7 +26,8 @@
                  [cheshire "5.7.0"]
                  [medley "0.8.4"]
                  [org.clojure/math.numeric-tower "0.0.4"]
-                 [prismatic/schema "1.1.3"]]
+                 [prismatic/schema "1.1.3"]
+                 [com.taoensso/timbre "4.10.0"]]
   :main ^:skip-aot GraphNamedThings.core
   :target-path "target/%s"
   :jvm-opts ["-Xmx1600m"]

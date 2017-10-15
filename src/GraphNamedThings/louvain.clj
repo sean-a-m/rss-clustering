@@ -3,7 +3,11 @@
             [loom.alg]
             [clojure.math.combinatorics :as combo]
             [clojure.math.numeric-tower :as math]
-            [GraphNamedThings.config :as config]))
+            [GraphNamedThings.config :as config]
+            [taoensso.timbre :as timbre
+             :refer [log  trace  debug  info  warn  error  fatal  report
+                     logf tracef debugf infof warnf errorf fatalf reportf
+                     spy get-env]]))
 
 
 (defn preexisting-comm-assignments
@@ -203,7 +207,7 @@
       (if (and (:modified? @state)
                (> limit iterations))
         (do
-          (println "Iterating graph...")
+          (info "Iterating graph...")
           (f-max-modularity state)
           (recur (inc iterations)))
         (-> @state
