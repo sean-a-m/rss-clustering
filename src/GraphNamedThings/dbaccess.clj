@@ -7,18 +7,9 @@
             [medley.core :as me])
   (:import org.jsoup.Jsoup))
 
-(def psqldb
-  {:classname   "org.postgresql.Driver"
-   :subprotocol "postgresql"
-   :subname     config/output-db-path
-   :user        config/psql-user
-   :password    config/psql-pass
-   :stringtype "unspecified"
-   })
 
-(defdb mydb psqldb)
 
-(def db2 (pg/pool :host config/dbhost :user config/psql-user :dbname config/dbname :password config/psql-pass))
+(def psqldb (pg/pool :host config/dbhost :user config/psql-user :dbname config/dbname :password config/psql-pass))
 
 (defentity entry
            (database psqldb)
@@ -30,11 +21,11 @@
            (table :entry))
 
 (defentity namedentities
-           (database mydb)
+           (database psqldb)
            (entity-fields :id :tag :docid))
 
 (defentity strings
-           (database mydb)
+           (database psqldb)
            (belongs-to namedentities)
            (entity-fields :id :entstring :count))
 
@@ -124,7 +115,7 @@
                         AND entry.id_feed = source_feeds.id_feed
                         AND source_feeds.id = sources.id")
         stmnt (apply vector query doc-ids)]
-    (jdbc/query db2 stmnt)))
+    (jdbc/query psqldb stmnt)))
 
 (defn get-string-counts [strings]
   "Get the number of ocurrences for each string in the list strings over all documents in the database"
@@ -133,7 +124,7 @@
                       FROM strings WHERE entstring IN (" prepared-stuff ")
                       GROUP BY entstring")
         stmnt (apply vector query strings)]
-    (jdbc/query db2 stmnt)))
+    (jdbc/query psqldb stmnt)))
 
 (defn related-article-ids [terms time-before limit offset]
   "TODO: Take into account term coreferences"
@@ -149,6 +140,6 @@
                       AND entry.date < ?::bigint
                     LIMIT ?::int OFFSET ?::int")
         stmnt (apply vector query (flatten (conj (list time-before limit offset) terms)))] ;FIXME: ugly
-    (jdbc/query db2 stmnt)))
+    (jdbc/query psqldb stmnt)))
 
 

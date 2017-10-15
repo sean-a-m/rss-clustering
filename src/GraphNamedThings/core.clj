@@ -22,8 +22,6 @@
     (timbre/merge-config! {:appenders {:spit {:enabled? true
                                               :min-level :error}}})))
 
-
-
 (defn update-clusters
   "Repeatedly update the document clusters returned by the server"
   [article-clusters]
@@ -56,5 +54,3 @@
     (future (document-processor nlp-pipe config/corenlp-batch-size))
     (future (update-clusters article-clusters))
     (future (server/run-server article-clusters))))
-
-
