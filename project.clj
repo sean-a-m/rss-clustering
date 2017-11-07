@@ -12,7 +12,6 @@
                  [org.clojure/java.jdbc "0.6.1"]
                  [org.postgresql/postgresql "9.4-1206-jdbc41"]
                  [org.clojure/math.combinatorics "0.1.3"]
-                 [korma "0.4.3"]
                  [clj-time "0.12.0"]
                  [http-kit "2.1.18"]
                  [ring/ring-json "0.4.0"]
@@ -27,7 +26,8 @@
                  [medley "0.8.4"]
                  [org.clojure/math.numeric-tower "0.0.4"]
                  [prismatic/schema "1.1.3"]
-                 [com.taoensso/timbre "4.10.0"]]
+                 [com.taoensso/timbre "4.10.0"]
+                 [com.layerware/hugsql "0.4.8"]]
   :main ^:skip-aot GraphNamedThings.core
   :target-path "target/%s"
   :jvm-opts ["-Xmx1600m"]
