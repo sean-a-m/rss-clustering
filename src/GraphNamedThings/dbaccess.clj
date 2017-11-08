@@ -52,10 +52,10 @@
 
 (defn write-entities [entity-records string-lists]
   (jdbc/with-db-transaction [tx psqldb]
-                            (if (seq entity-records)
-                              (map (partial db/write-entity-record tx) entity-records))
-                            (if (seq string-lists)
-                              (map (partial db/write-strings tx) string-lists))))
+      (doall
+        (map (partial db/write-entity-record tx) entity-records))
+      (doall
+        (map (partial db/write-string tx) string-lists))))
 
 
 (defn get-doc-summary

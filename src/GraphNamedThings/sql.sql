@@ -62,18 +62,10 @@ with sorted_docs as (
                       and entry.date < :time-before::bigint
                     limit :limit::int offset :offset::int
 
--- :name write-entity-records
-insert into namedentities (:id, tag, docid)
-values :tuple*:entity-records
-
--- :name write-entity-record
+-- :name write-entity-record :!
 insert into namedentities (id, tag, docid)
 values (:id, :tag, :docid)
 
--- :name write-strings
-insert into strings (id, entstring, count)
-values :tuple*:string-lists
-
--- :name write-string
+-- :name write-string :!
 insert into strings (id, entstring, count)
 values (:id, :entstring, :count)

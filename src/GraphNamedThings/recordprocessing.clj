@@ -1,6 +1,10 @@
 (ns GraphNamedThings.recordprocessing
   (:require [GraphNamedThings.entities :as inputs]
-            [GraphNamedThings.dbaccess :as dbio]))
+            [GraphNamedThings.dbaccess :as dbio]
+            [taoensso.timbre :as timbre
+             :refer [log  trace  debug  info  warn  error  fatal  report
+                     logf tracef debugf infof warnf errorf fatalf reportf
+                     spy get-env]]))
 
 (defn build-entity-string-list [entity]
   "Build a list of entity strings from an entity record"
@@ -21,7 +25,9 @@
         entity-record-list (map (partial build-entity-record id) entity-list)]
     (try
       (dbio/write-entities entity-record-list entity-string-list)
-      (catch Exception e (dbio/log-result id false))
+      (catch Exception e
+        (error e)
+        (dbio/log-result id false))
       (finally (dbio/log-result id true)))))
 
 (defn build-and-write-new-entity-records
